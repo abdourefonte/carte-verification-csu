@@ -1,20 +1,6 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "dist/carte-verification/**",
-      "use": "@vercel/static"
-    }
-  ],
   "routes": [
-    {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/(.*\\.(js|css|png|jpg|svg|json|ico|txt|woff|woff2))",
-      "dest": "/$1"
-    },
     {
       "src": "/(.*)",
       "dest": "/index.html"
