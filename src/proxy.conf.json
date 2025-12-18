@@ -1,0 +1,10 @@
+{
+  "/api": {
+    "target": "https://mdamsigicmu.sec.gouv.sn",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api": "/services/udam/api"
+    }
+  }
+}
