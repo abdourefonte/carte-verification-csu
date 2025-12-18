@@ -1,90 +1,13 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Carte Bénéficiaire CSU Sénégal</title>
+  <title>CarteVerification</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  
-  <!-- Précharger les polices et styles -->
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <style>
-    /* Style de secours */
-    body { 
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .loading-container {
-      text-align: center;
-      color: white;
-      padding: 40px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      max-width: 500px;
-      width: 90%;
-    }
-    
-    .spinner {
-      border: 5px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top: 5px solid white;
-      width: 60px;
-      height: 60px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    .error-message {
-      display: none;
-      background: rgba(255, 0, 0, 0.2);
-      padding: 15px;
-      border-radius: 10px;
-      margin-top: 20px;
-    }
-  </style>
 </head>
 <body>
-  <div class="loading-container" id="loading">
-    <div class="spinner"></div>
-    <h2>Chargement de l'application...</h2>
-    <p>Vérification de la carte bénéficiaire CSU Sénégal</p>
-    <div class="error-message" id="error">
-      <p id="error-text"></p>
-      <button onclick="location.reload()">Réessayer</button>
-    </div>
-  </div>
-  
   <app-root></app-root>
-
-  <script>
-    // Affiche une erreur après 10 secondes si l'app ne charge pas
-    setTimeout(function() {
-      var loading = document.getElementById('loading');
-      var error = document.getElementById('error');
-      var errorText = document.getElementById('error-text');
-      
-      if (!document.querySelector('app-root').hasChildNodes()) {
-        loading.style.display = 'none';
-        error.style.display = 'block';
-        errorText.textContent = "L'application met trop de temps à charger. Veuillez réessayer.";
-      }
-    }, 10000);
-  </script>
 </body>
 </html>
