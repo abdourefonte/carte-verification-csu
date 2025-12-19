@@ -113,10 +113,10 @@ export class ApiService {
 getBeneficiaire(code: string): Observable<Beneficiaire> {
   const encodedCode = encodeURIComponent(code);
   
-  // En production sur Vercel
+  // URL ABSOLUE vers votre fonction serverless
   const apiUrl = `https://carte-verification-csu-t1n5.vercel.app/api/beneficiaire?code=${encodedCode}`;
   
-  console.log('🌐 Appel via fonction serverless:', apiUrl);
+  console.log('🌐 Appel fonction serverless:', apiUrl);
   
   return this.http.get<Beneficiaire>(apiUrl);
 }

@@ -1,12 +1,21 @@
 {
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "/api/beneficiaire"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
+  "functions": {
+    "api/beneficiaire.js": {
+      "maxDuration": 10
+    }
+  },
   "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/carte-verification",
+  "outputDirectory": "dist/carte-verification/browser",
   "framework": "angular"
 }
