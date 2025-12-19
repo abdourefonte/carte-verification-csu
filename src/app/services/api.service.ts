@@ -110,15 +110,13 @@ export class ApiService {
     // En production - utilise cors-anywhere
     return 'https://cors-anywhere.herokuapp.com/https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation';
   }
-
-  getBeneficiaire(code: string): Observable<Beneficiaire> {
-    const encodedCode = encodeURIComponent(code);
-    const apiUrl = `${this.getApiUrl()}?code=${encodedCode}`;
-    
-    return this.http.get<Beneficiaire>(apiUrl, {
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    });
-  }
+getBeneficiaire(code: string): Observable<Beneficiaire> {
+  const encodedCode = encodeURIComponent(code);
+  const apiUrl = process.env['NEXT_PUBLIC_API_URL'] || 
+                'https://mdamsigicmu.sec.gouv.sn/services/udam';
+  
+  return this.http.get<Beneficiaire>(
+    `${apiUrl}/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
+  );
+}
 }
