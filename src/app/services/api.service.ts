@@ -99,29 +99,13 @@ export interface Beneficiaire {
   providedIn: 'root'
 })
 export class ApiService {
-    private apiUrl: string;
+  constructor(private http: HttpClient) {}
 
-  constructor(private http: HttpClient) {
-    // Détermine dynamiquement l'URL de l'API
-    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-      this.apiUrl = 'https://mdamsigicmu.sec.gouv.sn/services/udam/api';
-    } else {
-      this.apiUrl = 'http://localhost:3031/api';
-    }
-  }
-
-
-//   getBeneficiaire(code: string): Observable<Beneficiaire> {
-//     // Ajoutez encodeURIComponent pour gérer les caractères spéciaux
-//     const encodedCode = encodeURIComponent(code);
-//     return this.http.get<Beneficiaire>(
-//       `${environment.apiUrl}/beneficiairess/codeImmatriculation?code=${encodedCode}`
-//     );
-//   }
   getBeneficiaire(code: string): Observable<Beneficiaire> {
+    // Ajoutez encodeURIComponent pour gérer les caractères spéciaux
     const encodedCode = encodeURIComponent(code);
     return this.http.get<Beneficiaire>(
-      `${this.apiUrl}/beneficiairess/codeImmatriculation?code=${encodedCode}`
+      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
     );
   }
 }
