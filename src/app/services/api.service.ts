@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 
@@ -101,43 +101,11 @@ export interface Beneficiaire {
 export class ApiService {
   constructor(private http: HttpClient) {}
 
- private getApiUrl(): string {
-    // En développement
-    if (window.location.hostname === 'localhost') {
-      return 'https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation';
-    }
-    
-    // En production - utilise cors-anywhere
-    return 'https://cors-anywhere.herokuapp.com/https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation';
-  }
-// api.service.ts - SOLUTION DE CONTOURNEMENT
-getBeneficiaire(code: string): Observable<Beneficiaire> {
-  const encodedCode = encodeURIComponent(code);
-  
-  // SOLUTION: Utilisez votre domaine Vercel comme proxy
-  // Cela évite CORS car c'est le même domaine
-  const proxyApi = async () => {
-    const response = await fetch(
-      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`,
-      {
-        headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTc2NjIzNDUwNX0.FVsVZmwRIL8u60bbTuQXzf9HcMG9DpLQqNbc4URjBjqXKvejncyehlrl2zZqEm8D0cgmPboi57431MfcDrNhtw'
-        }
-      }
+  getBeneficiaire(code: string): Observable<Beneficiaire> {
+    // Ajoutez encodeURIComponent pour gérer les caractères spéciaux
+    const encodedCode = encodeURIComponent(code);
+    return this.http.get<Beneficiaire>(
+      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
     );
-    
-    if (!response.ok) throw new Error(`API Error: ${response.status}`);
-    return await response.json();
-  };
-  
-  // Retourne un Observable à partir de la Promise
-  return new Observable(observer => {
-    proxyApi()
-      .then(data => {
-        observer.next(data);
-        observer.complete();
-      })
-      .catch(error => observer.error(error));
-  });
-}
+  }
 }
