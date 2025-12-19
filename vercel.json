@@ -1,25 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/api/proxy/(.*)",
-      "destination": "/api/proxy/[...path]"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
-  "functions": {
-    "api/proxy/[...path].js": {
-      "maxDuration": 30,
-      "memory": 1024
-    }
-  },
-  "installCommand": "npm install",
-  "buildCommand": "npm run build -- --configuration=production",
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist/carte-verification",
-  "framework": "angular",
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "framework": "angular"
 }

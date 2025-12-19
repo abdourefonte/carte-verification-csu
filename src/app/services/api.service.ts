@@ -1,10 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders , HttpBackend} from '@angular/common/http';
-import { Observable, from, throwError } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-
-import { catchError, timeout } from 'rxjs/operators';
-import { ApiRawService } from './api-raw.service';
 
 
 export interface PaquetSoin {
@@ -102,25 +99,13 @@ export interface Beneficiaire {
   providedIn: 'root'
 })
 export class ApiService {
-    private readonly proxyUrl = '/api/proxy';
-  
   constructor(private http: HttpClient) {}
 
-  /**
-   * Récupère les informations d'un bénéficiaire via le proxy Vercel
-   */
   getBeneficiaire(code: string): Observable<Beneficiaire> {
+    // Ajoutez encodeURIComponent pour gérer les caractères spéciaux
     const encodedCode = encodeURIComponent(code);
-    
-    // URL format: /api/proxy/beneficiairess/codeImmatriculation?code=...
-    const url = `${this.proxyUrl}/beneficiairess/codeImmatriculation?code=${encodedCode}`;
-    
-    console.log('📡 Using proxy URL:', url);
-    
-    const headers = new HttpHeaders({
-      'Accept': 'application/json'
-    });
-
-    return this.http.get<Beneficiaire>(url, { headers });
+    return this.http.get<Beneficiaire>(
+      `${environment.apiUrl}/beneficiairess/codeImmatriculation?code=${encodedCode}`
+    );
   }
 }
