@@ -110,14 +110,34 @@ export class ApiService {
     // En production - utilise cors-anywhere
     return 'https://cors-anywhere.herokuapp.com/https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation';
   }
+// api.service.ts - SOLUTION DE CONTOURNEMENT
 getBeneficiaire(code: string): Observable<Beneficiaire> {
   const encodedCode = encodeURIComponent(code);
   
-  // URL ABSOLUE vers votre fonction serverless
-  const apiUrl = `https://carte-verification-csu-t1n5.vercel.app/api/beneficiaire?code=${encodedCode}`;
+  // SOLUTION: Utilisez votre domaine Vercel comme proxy
+  // Cela évite CORS car c'est le même domaine
+  const proxyApi = async () => {
+    const response = await fetch(
+      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`,
+      {
+        headers: {
+          'Authorization': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTc2NjIzNDUwNX0.FVsVZmwRIL8u60bbTuQXzf9HcMG9DpLQqNbc4URjBjqXKvejncyehlrl2zZqEm8D0cgmPboi57431MfcDrNhtw'
+        }
+      }
+    );
+    
+    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+    return await response.json();
+  };
   
-  console.log('🌐 Appel fonction serverless:', apiUrl);
-  
-  return this.http.get<Beneficiaire>(apiUrl);
+  // Retourne un Observable à partir de la Promise
+  return new Observable(observer => {
+    proxyApi()
+      .then(data => {
+        observer.next(data);
+        observer.complete();
+      })
+      .catch(error => observer.error(error));
+  });
 }
 }
