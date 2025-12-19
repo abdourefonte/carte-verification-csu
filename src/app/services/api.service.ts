@@ -1,10 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders , HttpBackend} from '@angular/common/http';
-import { Observable, from, throwError } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AuthService } from './auth.service';
-import { catchError, timeout } from 'rxjs/operators';
-import { ApiRawService } from './api-raw.service';
 
 
 export interface PaquetSoin {
@@ -102,100 +99,20 @@ export interface Beneficiaire {
   providedIn: 'root'
 })
 export class ApiService {
-     private httpWithoutInterceptors: HttpClient;
-  
-  // Utilisez l'un des proxys CORS publics
-  private readonly proxyUrls = [
-    'https://api.allorigins.win/raw?url=',
-    'https://corsproxy.io/?',
-    'https://proxy.cors.sh/'
-  ];
-  
-  private readonly token = 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJOTEVfVVNFUiIsImV4cCI6MTc2NjIyNzIxMH0.tVuo-RaQIzb0Dsly9FHfe9yDaeNYMj8fYQPhuOsvNO3l_N67_QYYLDpdvFPvkppvFOym8-J_GxEL2fzaH2eSvA';
+      private readonly token = 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTc2NjIyNzIxMH0.tVuo-RaQIzb0Dsly9FHfe9yDaeNYMj8fYQPhuOsvNO3l_N67_QYYLDpdvFPvkppvFOym8-J_GxEL2fzaH2eSvA';
+  constructor(private http: HttpClient) {}
 
-  constructor(
-    private http: HttpClient,
-    private handler: HttpBackend,
-    private apiRawService: ApiRawService
-  ) {
-    this.httpWithoutInterceptors = new HttpClient(handler);
-  }
-
-  /**
-   * ESSAYEZ CETTE MÉTHODE EN PREMIER - Elle contourne les interceptors
-   */
-  getBeneficiaire(code: string): Observable<Beneficiaire> {
+getBeneficiaire(code: string): Observable<Beneficiaire> {
     const encodedCode = encodeURIComponent(code);
     
-    // OPTION 1: Utiliser HttpClient sans interceptors
-    const directUrl = `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`;
-    
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${this.token}`,
-      'Accept': 'application/json'
-      // NE PAS mettre Content-Type pour les requêtes GET
-    });
+    // Crée les headers avec le token
+    const headers = {
+      'Authorization': `Bearer ${this.token}`
+    };
 
-    return this.httpWithoutInterceptors.get<Beneficiaire>(directUrl, { 
-      headers,
-      withCredentials: false
-    }).pipe(
-      timeout(30000),
-      catchError(error => {
-        console.log('Méthode directe échouée, tentative avec proxy...', error);
-        return this.getViaProxy(code);
-      })
+    return this.http.get<Beneficiaire>(
+      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`,
+      { headers }
     );
-  }
-
-  /**
-   * Utiliser un proxy CORS public
-   */
-  private getViaProxy(code: string): Observable<Beneficiaire> {
-    const encodedCode = encodeURIComponent(code);
-    const targetUrl = `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`;
-    
-    // Essayer différents proxys
-    const proxyUrl = this.proxyUrls[0] + encodeURIComponent(targetUrl);
-    
-    console.log('Using proxy URL:', proxyUrl);
-    
-    return this.httpWithoutInterceptors.get<any>(proxyUrl).pipe(
-      timeout(30000),
-      catchError(error => {
-        console.log('Proxy 1 échoué, essai suivant...', error);
-        return this.tryNextProxy(code, 1);
-      })
-    );
-  }
-
-  /**
-   * Essayer le prochain proxy dans la liste
-   */
-  private tryNextProxy(code: string, index: number): Observable<Beneficiaire> {
-    if (index >= this.proxyUrls.length) {
-      return throwError(() => new Error('Tous les proxys ont échoué'));
-    }
-    
-    const encodedCode = encodeURIComponent(code);
-    const targetUrl = `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`;
-    const proxyUrl = this.proxyUrls[index] + encodeURIComponent(targetUrl);
-    
-    console.log(`Trying proxy ${index + 1}:`, proxyUrl);
-    
-    return this.httpWithoutInterceptors.get<any>(proxyUrl).pipe(
-      timeout(30000),
-      catchError(error => {
-        console.log(`Proxy ${index + 1} échoué`, error);
-        return this.tryNextProxy(code, index + 1);
-      })
-    );
-  }
-
-  /**
-   * Méthode de secours avec XMLHttpRequest
-   */
-  getBeneficiaireFallback(code: string): Observable<Beneficiaire> {
-    return this.apiRawService.getBeneficiaireRaw(code);
   }
 }
