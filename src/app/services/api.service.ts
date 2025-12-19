@@ -101,11 +101,26 @@ export interface Beneficiaire {
 export class ApiService {
   constructor(private http: HttpClient) {}
 
-  getBeneficiaire(code: string): Observable<Beneficiaire> {
-    // Ajoutez encodeURIComponent pour gérer les caractères spéciaux
-    const encodedCode = encodeURIComponent(code);
-    return this.http.get<Beneficiaire>(
-      `${environment.apiUrl}/beneficiairess/codeImmatriculation?code=${encodedCode}`
-    );
-  }
+// api.service.ts - TEMPORAIRE
+// getBeneficiaire(code: string): Observable<Beneficiaire> {
+//   const encodedCode = encodeURIComponent(code);
+  
+//   // ⭐ UTILISEZ LE CHEMIN RELATIF VIA PROXY
+//   return this.http.get<Beneficiaire>(
+//     `/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`,
+//     {
+//       headers: {
+//         'Authorization': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTc2NjIzNDUwNX0.FVsVZmwRIL8u60bbTuQXzf9HcMG9DpLQqNbc4URjBjqXKvejncyehlrl2zZqEm8D0cgmPboi57431MfcDrNhtw'
+//       }
+//     }
+//   );
+// }
+getBeneficiaire(code: string): Observable<Beneficiaire> {
+  const encodedCode = encodeURIComponent(code);
+  
+  // Appelle VOTRE proxy sur Render
+  return this.http.get<Beneficiaire>(
+    `/api/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
+  );
+}
 }

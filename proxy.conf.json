@@ -1,0 +1,8 @@
+{
+  "/services/udam": {
+    "target": "https://mdamsigicmu.sec.gouv.sn",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}
