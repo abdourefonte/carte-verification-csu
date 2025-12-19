@@ -110,37 +110,14 @@ export class ApiService {
     // En production - utilise cors-anywhere
     return 'https://cors-anywhere.herokuapp.com/https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation';
   }
-// api.service.ts
 getBeneficiaire(code: string): Observable<Beneficiaire> {
   const encodedCode = encodeURIComponent(code);
   
-  // Liste de proxies CORS gratuits
-  const proxyOptions = [
-    // Option 1: AllOrigins (très rapide)
-    `https://api.allorigins.win/get?url=${encodeURIComponent(
-      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
-    )}`,
-    
-    // Option 2: CORS Proxy
-    `https://corsproxy.io/?${encodeURIComponent(
-      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
-    )}`,
-    
-    // Option 3: ThingProxy
-    `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(
-      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
-    )}`
-  ];
+  // En production sur Vercel
+  const apiUrl = `https://carte-verification-csu-t1n5.vercel.app/api/beneficiaire?code=${encodedCode}`;
   
-  // Essayez le premier proxy
-  return this.http.get(proxyOptions[0]).pipe(
-    map((response: any) => {
-      // AllOrigins retourne {contents: JSON, status: {...}}
-      if (response.contents) {
-        return JSON.parse(response.contents);
-      }
-      return response;
-    })
-  );
+  console.log('🌐 Appel via fonction serverless:', apiUrl);
+  
+  return this.http.get<Beneficiaire>(apiUrl);
 }
 }
