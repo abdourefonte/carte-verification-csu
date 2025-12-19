@@ -674,69 +674,25 @@ formatDated(date?: string): string {
            this.beneficiaire.typeBeneficiaire.libelle || 
            'CLASSIQUE';
   }
-  // loadBeneficiaire(code: string): void {
-  //   console.log('📞 Appel API avec code:', code);
+  loadBeneficiaire(code: string): void {
+    console.log('📞 Appel API avec code:', code);
     
-  //   this.apiService.getBeneficiaire(code).subscribe({
-  //     next: (data) => {
-  //       console.log('✅ Données reçues:', data);
-  //       this.beneficiaire = data;
-  //       this.loading = false;
-  //       setTimeout(() => this.generateQRCode(), 100);
-  //     },
-  //     error: (err) => {
-  //       console.error('❌ Erreur API:', err);
-  //       this.error = true;
-  //       this.errorMessage = `Erreur API: ${err.message || err.statusText}`;
-  //       this.loading = false;
-  //     }
-  //   });
-  // }
-// ✅ NOUVELLE MÉTHODE AVEC FALLBACK - GARDEZ CELLE-CI
-loadBeneficiaire(code: string): void {
-  console.log('📞 Appel API avec code:', code);
-  
-  // ESSAYEZ CETTE APPROCHE D'ABORD
-  this.apiService.getBeneficiaire(code).subscribe({
-    next: (data) => {
-      console.log('✅ Données reçues (méthode 1):', data);
-      this.beneficiaire = data;
-      this.loading = false;
-      setTimeout(() => this.generateQRCode(), 100);
-    },
-    error: (err) => {
-      console.log('❌ Méthode 1 échouée, tentative méthode 2...');
-      
-      // Méthode de secours
-      this.apiService.getBeneficiaireFallback(code).subscribe({
-        next: (data) => {
-          console.log('✅ Données reçues (méthode 2):', data);
-          this.beneficiaire = data;
-          this.loading = false;
-          setTimeout(() => this.generateQRCode(), 100);
-        },
-        error: (fallbackErr) => {
-          console.error('❌ Toutes les méthodes ont échoué:', fallbackErr);
-          this.error = true;
-          this.errorMessage = `
-            Impossible de récupérer les données.
-            
-            Cause : Le serveur API envoie des headers CORS incorrects
-            (Access-Control-Allow-Origin: *, * au lieu de Access-Control-Allow-Origin: *)
-            
-            Solutions :
-            1. Contactez l'administrateur du serveur pour corriger les headers CORS
-            2. Utilisez un proxy serveur
-            3. Testez avec un proxy CORS public
-            
-            Erreur : ${fallbackErr.message}
-          `;
-          this.loading = false;
-        }
-      });
-    }
-  });
-}
+    this.apiService.getBeneficiaire(code).subscribe({
+      next: (data) => {
+        console.log('✅ Données reçues:', data);
+        this.beneficiaire = data;
+        this.loading = false;
+        setTimeout(() => this.generateQRCode(), 100);
+      },
+      error: (err) => {
+        console.error('❌ Erreur API:', err);
+        this.error = true;
+        this.errorMessage = `Erreur API: ${err.message || err.statusText}`;
+        this.loading = false;
+      }
+    });
+  }
+
   generateQRCode(): void {
     if (!this.beneficiaire || !this.qrCanvas?.nativeElement) return;
     
