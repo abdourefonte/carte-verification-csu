@@ -101,11 +101,24 @@ export interface Beneficiaire {
 export class ApiService {
   constructor(private http: HttpClient) {}
 
+ private getApiUrl(): string {
+    // En développement
+    if (window.location.hostname === 'localhost') {
+      return 'https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation';
+    }
+    
+    // En production - utilise cors-anywhere
+    return 'https://cors-anywhere.herokuapp.com/https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation';
+  }
+
   getBeneficiaire(code: string): Observable<Beneficiaire> {
-    // Ajoutez encodeURIComponent pour gérer les caractères spéciaux
     const encodedCode = encodeURIComponent(code);
-    return this.http.get<Beneficiaire>(
-      `${environment.apiUrl}/beneficiairess/codeImmatriculation?code=${encodedCode}`
-    );
+    const apiUrl = `${this.getApiUrl()}?code=${encodedCode}`;
+    
+    return this.http.get<Beneficiaire>(apiUrl, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
   }
 }
