@@ -105,7 +105,7 @@ export class ApiService {
     // Ajoutez encodeURIComponent pour gérer les caractères spéciaux
     const encodedCode = encodeURIComponent(code);
     return this.http.get<Beneficiaire>(
-      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
+      `${environment.apiUrl}/beneficiairess/codeImmatriculation?code=${encodedCode}`
     );
   }
 }
