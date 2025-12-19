@@ -99,13 +99,20 @@ export interface Beneficiaire {
   providedIn: 'root'
 })
 export class ApiService {
+      private readonly token = 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTc2NjIyNzIxMH0.tVuo-RaQIzb0Dsly9FHfe9yDaeNYMj8fYQPhuOsvNO3l_N67_QYYLDpdvFPvkppvFOym8-J_GxEL2fzaH2eSvA';
   constructor(private http: HttpClient) {}
 
-  getBeneficiaire(code: string): Observable<Beneficiaire> {
-    // Ajoutez encodeURIComponent pour gérer les caractères spéciaux
+getBeneficiaire(code: string): Observable<Beneficiaire> {
     const encodedCode = encodeURIComponent(code);
+    
+    // Crée les headers avec le token
+    const headers = {
+      'Authorization': `Bearer ${this.token}`
+    };
+
     return this.http.get<Beneficiaire>(
-      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
+      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`,
+      { headers }
     );
   }
 }
