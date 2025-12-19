@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 
 export interface PaquetSoin {
@@ -99,19 +100,47 @@ export interface Beneficiaire {
   providedIn: 'root'
 })
 export class ApiService {
-      private readonly token = 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTc2NjIyNzIxMH0.tVuo-RaQIzb0Dsly9FHfe9yDaeNYMj8fYQPhuOsvNO3l_N67_QYYLDpdvFPvkppvFOym8-J_GxEL2fzaH2eSvA';
-  constructor(private http: HttpClient) {}
+     private readonly apiUrl = 'https://mdamsigicmu.sec.gouv.sn/services/udam/api';
+  private header: HttpHeaders;
 
-getBeneficiaire(code: string): Observable<Beneficiaire> {
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {
+    // Initialisez les headers exactement comme dans votre backend
+    this.header = new HttpHeaders()
+      .set('Authorization', 'Bearer ' + this.authService.getToken())
+      .set('Accept', 'application/json')
+      .set('Content-Type', 'application/json');
+    
+    console.log('Headers initialisés:', this.header);
+  }
+
+  getBeneficiaire(code: string): Observable<Beneficiaire> {
+    const encodedCode = encodeURIComponent(code);
+    const url = `${this.apiUrl}/beneficiairess/codeImmatriculation?code=${encodedCode}`;
+    
+    console.log('URL:', url);
+    console.log('Headers envoyés:', this.header);
+
+    return this.http.get<Beneficiaire>(url, {
+      headers: this.header,
+      observe: 'body'  // Pas besoin de 'response' si vous voulez juste le corps
+    });
+  }
+
+  // Version alternative avec création dynamique des headers
+  getBeneficiaire2(code: string): Observable<Beneficiaire> {
     const encodedCode = encodeURIComponent(code);
     
-    // Crée les headers avec le token
-    const headers = {
-      'Authorization': `Bearer ${this.token}`
-    };
+    // Créez les headers dynamiquement comme dans votre backend
+    const headers = new HttpHeaders()
+      .set('Authorization', 'Bearer ' + this.authService.getToken())
+      .set('Accept', 'application/json')
+      .set('Content-Type', 'application/json');
 
     return this.http.get<Beneficiaire>(
-      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`,
+      `${this.apiUrl}/beneficiairess/codeImmatriculation?code=${encodedCode}`,
       { headers }
     );
   }
