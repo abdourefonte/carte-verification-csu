@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 
@@ -110,13 +110,37 @@ export class ApiService {
     // En production - utilise cors-anywhere
     return 'https://cors-anywhere.herokuapp.com/https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation';
   }
+// api.service.ts
 getBeneficiaire(code: string): Observable<Beneficiaire> {
   const encodedCode = encodeURIComponent(code);
-  const apiUrl = process.env['NEXT_PUBLIC_API_URL'] || 
-                'https://mdamsigicmu.sec.gouv.sn/services/udam';
   
-  return this.http.get<Beneficiaire>(
-    `${apiUrl}/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
+  // Liste de proxies CORS gratuits
+  const proxyOptions = [
+    // Option 1: AllOrigins (très rapide)
+    `https://api.allorigins.win/get?url=${encodeURIComponent(
+      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
+    )}`,
+    
+    // Option 2: CORS Proxy
+    `https://corsproxy.io/?${encodeURIComponent(
+      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
+    )}`,
+    
+    // Option 3: ThingProxy
+    `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(
+      `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
+    )}`
+  ];
+  
+  // Essayez le premier proxy
+  return this.http.get(proxyOptions[0]).pipe(
+    map((response: any) => {
+      // AllOrigins retourne {contents: JSON, status: {...}}
+      if (response.contents) {
+        return JSON.parse(response.contents);
+      }
+      return response;
+    })
   );
 }
 }
