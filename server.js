@@ -16,7 +16,7 @@ app.use('/api', createProxyMiddleware({
   onProxyReq: (proxyReq, req, res) => {
     // Ajoute le token JWT
     proxyReq.setHeader('Authorization', 
-      'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTc2NjI0MzEzMn0.uqVmZx4Xc4TKX8fKZwLdZymAF4E1fvpliEw0sf795boyzj_xO2G2SRXvUVB5IiJOZnAJEELeDzwVXx6xQnZ4mg');
+      'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTc2NjMxNzcwMn0.cSHrdJ78KNnu1yr_mX-QZhmJ4kI4MQGDmiBuQr_IAjNDpM-6eY89RkbokxWlNiy8dZ2KwUeKAevwBr86bVtNLQ');
   }
 }));
 
