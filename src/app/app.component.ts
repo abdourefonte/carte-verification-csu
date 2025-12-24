@@ -6,148 +6,132 @@ import * as QRCode from 'qrcode';
 @Component({
   selector: 'app-root',
   template: `
-<!-- Header compact -->
-<header class="bg-white shadow-sm py-2">
-  <div class="container-fluid">
+  <!-- Header -->
+<header class="bg-white shadow-sm py-3">
+  <div class="container">
     <div class="row align-items-center">
-      <div class="col-auto">
-        <img src="assets/flag-senegal.webp" alt="Logo CSU" height="50">
+      <div class="col-md-2 text-center">
+        <img src="assets/flag-senegal.webp" alt="Logo CSU" height="60">
       </div>
-      <div class="col text-center">
-        <h1 class="h5 mb-0 text-primary">COUVERTURE SANITAIRE UNIVERSELLE</h1>
+      <div class="col-md-8 text-center">
+        <h1 class="h4 mb-1 text-primary">COUVERTURE SANITAIRE UNIVERSELLE</h1>
         <p class="mb-0 text-muted"><small>République du Sénégal</small></p>
       </div>
-      <div class="col-auto">
-        <img src="assets/flag-senegal.webp" alt="Drapeau Sénégal" height="35">
+      <div class="col-md-2 text-center">
+        <img src="assets/flag-senegal.webp" alt="Drapeau Sénégal" height="40">
       </div>
     </div>
   </div>
 </header>
 
-<!-- Main Content - Layout côte à côte -->
-<main class="container-fluid py-3" style="height: calc(100vh - 120px);">
-  
-  <!-- Loading State -->
-  <div *ngIf="loading" class="text-center py-5">
-    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-    <h3 class="mt-3">Chargement...</h3>
-  </div>
-
-  <!-- Error State -->
-  <div *ngIf="error" class="alert alert-danger text-center">
-    <h4><i class="fas fa-exclamation-triangle"></i> Erreur</h4>
-    <p>{{ errorMessage }}</p>
-    <button class="btn btn-outline-danger" (click)="reloadPage()">
-      Réessayer
-    </button>
-  </div>
-
-  <!-- Welcome Page -->
-  <div *ngIf="!loading && !error && !beneficiaire" class="text-center py-5">
-    <div class="card shadow">
-      <div class="card-body p-5">
-        <i class="fas fa-qr-code display-1 text-primary mb-4"></i>
-        <h2 class="mb-3">Vérification Carte Bénéficiaire</h2>
-        <p class="text-muted mb-4">
-          Scannez un QR code de carte CSU pour vérifier sa validité
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Beneficiary Dashboard - Layout à deux colonnes -->
-  <div *ngIf="!loading && !error && beneficiaire" class="h-100">
+<!-- Main Content -->
+<main class="py-4">
+  <div class="container">
     
-    <!-- Status Bar -->
-    <div class="row mb-3">
-      <div class="col-12">
-        <div class="card shadow-sm">
-          <div class="card-body py-2" [ngClass]="{'bg-success': isCardValid(), 'bg-danger': !isCardValid()}">
-            <div class="row align-items-center">
-              <div class="col-md-6 text-white">
-                <h4 class="mb-0">
-                  <i class="fas" [ngClass]="{'fa-check-circle': isCardValid(), 'fa-times-circle': !isCardValid()}"></i>
-                  {{ isCardValid() ? 'CARTE VALIDE' : 'CARTE EXPIRÉE' }}
-                </h4>
-                <small>Vérifié le {{ today | date:'dd/MM/yyyy à HH:mm' }}</small>
-              </div>
-              <div class="col-md-6 text-end">
-                <span class="badge bg-white text-dark me-2">
-                  Code: {{ beneficiaire.code || 'N/A' }}
-                </span>
-                <button class="btn btn-light btn-sm me-2" (click)="printPage()">
-                  <i class="fas fa-print"></i>
-                </button>
-                <button class="btn btn-light btn-sm" (click)="sharePage()">
-                  <i class="fas fa-share-alt"></i>
-                </button>
-              </div>
-            </div>
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-5">
+      <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+      <h3 class="mt-3">Chargement...</h3>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error" class="alert alert-danger text-center">
+      <h4><i class="fas fa-exclamation-triangle"></i> Erreur</h4>
+      <p>{{ errorMessage }}</p>
+      <button class="btn btn-outline-danger" (click)="reloadPage()">
+        Réessayer
+      </button>
+    </div>
+
+    <!-- Welcome Page (no code) -->
+    <div *ngIf="!loading && !error && !beneficiaire" class="text-center py-5">
+      <div class="card shadow">
+        <div class="card-body p-5">
+          <i class="fas fa-qr-code display-1 text-primary mb-4"></i>
+          <h2 class="mb-3">Vérification Carte Bénéficiaire</h2>
+          <p class="text-muted mb-4">
+            Scannez un QR code de carte CSU pour vérifier sa validité
+          </p>
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            Cette page s'ouvre automatiquement lorsqu'un QR code est scanné
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Two Column Layout -->
-    <div class="row g-3 h-100">
-      <!-- Left Column (40%) -->
-      <div class="col-md-4 d-flex flex-column h-100">
-        
-        <!-- Identity Card -->
-        <div class="card shadow-sm h-100">
-          <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="fas fa-user me-2"></i>Identité</h5>
+    <!-- Beneficiary Card -->
+    <div *ngIf="!loading && !error && beneficiaire" class="card shadow-lg">
+      
+      <!-- Card Header -->
+      <div class="card-header" [ngClass]="{'bg-success': isCardValid(), 'bg-danger': !isCardValid()}">
+        <div class="row align-items-center">
+          <div class="col-md-8 text-white">
+            <h3 class="mb-1">
+              <i class="fas" [ngClass]="{'fa-check-circle': isCardValid(), 'fa-times-circle': !isCardValid()}"></i>
+              {{ isCardValid() ? 'CARTE VALIDE' : 'CARTE EXPIRÉE' }}
+            </h3>
+            <small>Vérifié le {{ today | date:'dd/MM/yyyy à HH:mm' }}</small>
           </div>
-          <div class="card-body">
-            <!-- Photo & QR Code -->
-            <div class="row mb-3">
-              <div class="col-6 text-center">
-                <div class="photo-container mb-2">
-                  <div *ngIf="beneficiaire.photo" class="rounded-circle overflow-hidden mx-auto"
-                       style="width: 100px; height: 100px;">
-                    <img [src]="getPhotoUrl()" alt="Photo" class="img-fluid h-100 w-100">
-                  </div>
-                  <div *ngIf="!beneficiaire.photo" 
-                       class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto"
-                       style="width: 100px; height: 100px;">
-                    <i class="fas fa-user fs-2 text-muted"></i>
-                  </div>
-                </div>
-                <div class="qr-code-container">
-                  <canvas #qrCanvas style="width: 100px; height: 100px;"></canvas>
-                </div>
+          <div class="col-md-4 text-end">
+            <button class="btn btn-light btn-sm me-2" (click)="printPage()">
+              <i class="fas fa-print"></i> Imprimer
+            </button>
+            <button class="btn btn-light btn-sm" (click)="sharePage()">
+              <i class="fas fa-share-alt"></i> Partager
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Body -->
+      <div class="card-body p-4">
+        
+        <!-- Identity Section -->
+        <div class="row mb-4">
+          <div class="col-md-3 text-center">
+            <!-- Photo -->
+            <div class="mb-3">
+              <div *ngIf="beneficiaire.photo" class="rounded-circle mx-auto overflow-hidden"
+                   style="width: 120px; height: 120px;">
+                <img [src]="getPhotoUrl()" alt="Photo" class="img-fluid h-100 w-100">
               </div>
-              <div class="col-6">
-                <h4 class="text-primary">{{ beneficiaire.prenom }} {{ beneficiaire.nom }}</h4>
-                <div class="mb-2">
-                  <span class="badge bg-info">{{ getAge() }} ans</span>
-                  <span class="badge ms-1" [ngClass]="{
-                    'bg-success': beneficiaire.sexe === 'M',
-                    'bg-purple': beneficiaire.sexe === 'F'
-                  }">
-                    {{ beneficiaire.sexe === 'M' ? 'Homme' : 'Femme' }}
-                  </span>
-                </div>
-                <div class="small">
-                  <div><strong>CNI:</strong> {{ beneficiaire.numeroPiece || 'N/A' }}</div>
-                  <div><strong>Naissance:</strong> {{ formatDate(beneficiaire.dateNaissance) }}</div>
-                  <div><strong>Lieu:</strong> {{ beneficiaire.lieuNaissance || 'N/A' }}</div>
-                </div>
+              <div *ngIf="!beneficiaire.photo" class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto"
+                   style="width: 120px; height: 120px;">
+                <i class="fas fa-user fs-1 text-muted"></i>
               </div>
             </div>
-
+            
             <!-- Matricule -->
-            <div class="text-center mb-3">
-              <span class="badge bg-dark fs-6 p-2">
+            <div class="mb-3">
+              <span class="badge bg-primary fs-6 p-2">
                 {{ beneficiaire.codeImmatriculation }}
               </span>
             </div>
+            
+            <!-- QR Code -->
 
-            <!-- Status & Contact -->
-            <div class="row g-2 mb-3">
-              <div class="col-6">
-                <label class="small text-muted">Statut</label>
-                <div>
+          </div>
+
+          <div class="col-md-9">
+            <h2 class="mb-3">
+              {{ beneficiaire.prenom }} {{ beneficiaire.nom }}
+              <small class="text-muted">({{ getAge() }} ans)</small>
+            </h2>
+            
+            <div class="row">
+              <div class="col-md-6">
+               <div>
+                      <p><strong>Code assuré:</strong> {{ beneficiaire.code || 'N/A' }}</p>
+                    </div>
+                <p><strong>Sexe:</strong> {{ beneficiaire.sexe }}</p>
+                
+                <p><strong>CNI:</strong> {{ beneficiaire.numeroPiece || 'N/A' }}</p>
+              </div>
+              <div class="col-md-6">
+                <p><strong>Date naissance:</strong> {{ formatDate(beneficiaire.dateNaissance) }}</p>
+                <p><strong>Lieu naissance:</strong> {{ beneficiaire.lieuNaissance || 'N/A' }}</p>
+                <p><strong>Statut:</strong> 
                   <span class="badge" [ngClass]="{
                     'bg-success': beneficiaire.etat === 'Active',
                     'bg-warning': beneficiaire.etat === 'SUSPENDRE',
@@ -155,208 +139,216 @@ import * as QRCode from 'qrcode';
                   }">
                     {{ beneficiaire.etat }}
                   </span>
-                </div>
-              </div>
-              <div class="col-6">
-                <label class="small text-muted">Adhérent</label>
-                <div>
-                  <span class="badge" [ngClass]="beneficiaire.adherent ? 'bg-success' : 'bg-warning'">
-                    {{ beneficiaire.adherent ? 'OUI' : 'NON' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Contact Info -->
-            <div class="mb-3">
-              <label class="small text-muted">Email</label>
-              <p class="mb-1">{{ beneficiaire.email || 'Non renseigné' }}</p>
-            </div>
-
-            <!-- Type & Categorie -->
-            <div class="row g-2">
-              <div class="col-6">
-                <label class="small text-muted">Type</label>
-                <p class="mb-0 fw-bold">{{ getTypeBeneficiaireLibelle() }}</p>
-              </div>
-              <div class="col-6">
-                <label class="small text-muted">Catégorie</label>
-                <p class="mb-0 fw-bold">{{ getCategorieLibelle() }}</p>
+                </p>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Right Column (60%) -->
-      <div class="col-md-8 d-flex flex-column h-100">
         
-        <!-- Top Row - Adhesion & Coverage -->
-        <div class="row g-3 mb-3 flex-grow-1">
-          
-          <!-- Adhesion Card -->
-          <div class="col-md-6">
-            <div class="card shadow-sm h-100">
-              <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Adhésion</h5>
-              </div>
-              <div class="card-body">
-                <div class="mb-3">
-                  <label class="small text-muted">Titulaire</label>
-                  <h6 class="mb-1">{{ getTitulaireNomComplet() }}</h6>
-                  <small class="text-muted">{{ beneficiaire.titulaire?.telephone || '' }}</small>
-                </div>
-
-                <div class="mb-3">
-                  <label class="small text-muted">Relation</label>
-                  <p class="mb-1 fw-bold">{{ getRelationLibelle() }}</p>
-                </div>
-
-                <div class="row g-2 mb-3">
-                  <div class="col-6">
-                    <label class="small text-muted">Type Adhésion</label>
-                    <p class="mb-1">{{ beneficiaire.adhesion?.adhesionType || 'Famille' }}</p>
-                  </div>
-                  <div class="col-6">
-                    <label class="small text-muted">Famille</label>
-                    <p class="mb-1">{{ beneficiaire.adhesion?.denomination || 'N/A' }}</p>
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label class="small text-muted">Paiement</label>
-                  <div class="d-flex align-items-center justify-content-between">
-                    <span class="badge" [ngClass]="beneficiaire.adhesion?.estPaye ? 'bg-success' : 'bg-danger'">
-                      {{ beneficiaire.adhesion?.estPaye ? 'PAYÉ' : 'NON PAYÉ' }}
-                    </span>
-                    <span class="text-primary fw-bold">
-                      {{ getMontantCotisation() }} FCFA
-                    </span>
-                  </div>
-                </div>
-
-                <div class="small text-muted">
-                  <div>Date enregistrement: {{ beneficiaire.dateInsert ? formatDateTime(beneficiaire.dateInsert) : 'N/A' }}</div>
-                  <div>Date adhésion: {{ beneficiaire?.adhesion?.dateAdhesion ? formatDated(beneficiaire.adhesion?.dateAdhesion) : 'N/A' }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Coverage Card -->
-          <div class="col-md-6">
-            <div class="card shadow-sm h-100">
-              <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Couverture</h5>
-              </div>
-              <div class="card-body">
-                <!-- Dates -->
-                <div class="row g-2 mb-3">
-                  <div class="col-6">
-                    <label class="small text-muted">Début</label>
-                    <p class="mb-1 fw-bold">{{ beneficiaire.dateDebutc ? formatDate(beneficiaire.dateDebutc) : 'N/A' }}</p>
-                  </div>
-                  <div class="col-6">
-                    <label class="small text-muted">Fin</label>
-                    <p class="mb-1 fw-bold">{{ beneficiaire.dateFinc ? formatDate(beneficiaire.dateFinc) : 'N/A' }}</p>
-                  </div>
-                </div>
-
-                <!-- Progress & Days -->
-                <div class="mb-4">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="fs-4 fw-bold">{{ getDaysRemaining() }} jours</span>
-                    <span class="text-muted small">restants</span>
-                  </div>
-                  <div class="progress" style="height: 20px;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated"
-                         [ngClass]="{'bg-success': isCardValid(), 'bg-danger': !isCardValid()}"
-                         [style.width]="getProgress() + '%'">
-                      {{ getProgress().toFixed(1) }}%
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Paquet & Taux -->
-                <div class="row g-2 mb-3">
-                  <div class="col-6">
-                    <label class="small text-muted">Paquet soins</label>
-                    <p class="mb-1 fw-bold">{{ getPaquetSoinLibelle() }}</p>
-                  </div>
-                  <div class="col-6">
-                    <label class="small text-muted">Taux couverture</label>
-                    <p class="mb-1 fw-bold">{{ getTauxCouverture() }}%</p>
-                  </div>
-                </div>
-
-                <!-- Régime & Type -->
-                <div class="row g-2">
-                  <div class="col-6">
-                    <label class="small text-muted">Régime</label>
-                    <p class="mb-1">Contributif</p>
-                  </div>
-                  <div class="col-6">
-                    <label class="small text-muted">Type bénéficiaire</label>
-                    <p class="mb-1">{{ getCategorieTypeBeneficiaire() }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bottom Row - Address -->
-        <div class="row flex-grow-1">
+        <!-- NOUVELLE SECTION: Informations Personnelles Détaillées -->
+        <div class="row mb-4">
           <div class="col-12">
-            <div class="card shadow-sm h-100">
-              <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0"><i class="fas fa-home me-2"></i>Adresse</h5>
+            <div class="card card-body bg-light">
+              <h4 class="border-bottom pb-2 mb-3">
+                <i class="fas fa-id-card text-primary me-2"></i>Informations Personnelles
+              </h4>
+              
+              <div class="row">
+                <!-- Colonne 1 -->
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label class="text-muted small mb-1">Type de Pièce</label>
+                    <p class="mb-0 fw-bold">{{ beneficiaire.typePiece || 'CNI' }}</p>
+                  </div>
+                  <div class="mb-3">
+                    <label class="text-muted small mb-1">Relation au Titulaire</label>
+                    <p class="mb-0 fw-bold">{{ getRelationLibelle() }}</p>
+                  </div>
+                  <div class="mb-3">
+                    <label class="text-muted small mb-1">Email</label>
+                    <p class="mb-0 fw-bold">{{ beneficiaire.email || 'Non renseigné' }}</p>
+                  </div>
+                </div>
+                
+                <!-- Colonne 2 -->
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label class="text-muted small mb-1">Titulaire de l'Adhésion</label>
+                    <p class="mb-0 fw-bold">{{ getTitulaireNomComplet() }}</p>
+                    <small class="text-muted">{{ beneficiaire.titulaire?.telephone || '' }}</small>
+                  </div>
+                  <div class="mb-3">
+                    <label class="text-muted small mb-1">Type de Bénéficiaire</label>
+                    <p class="mb-0 fw-bold">{{ getTypeBeneficiaireLibelle() }}</p>
+                    <small class="text-muted">Catégorie: {{ getCategorieLibelle() }}</small>
+                  </div>
+                </div>
+                
+                <!-- Colonne 3 -->
+                <div class="col-md-4">
+                  
+                  <div class="mb-3">
+                    <label class="text-muted small mb-1">Date d'Enregistrement</label>
+                    <p class="mb-0 fw-bold">{{ beneficiaire.dateInsert ? formatDateTime(beneficiaire.dateInsert) : 'N/A' }}</p>
+                  </div>
+                  <div class="mb-3">
+                    <label class="text-muted small mb-1">Adhérent</label>
+                    <span class="badge" [ngClass]="beneficiaire.adherent ? 'bg-success' : 'bg-warning'">
+                      {{ beneficiaire.adherent ? 'OUI' : 'NON' }}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div class="card-body">
-                <div class="row h-100">
-                  <div class="col-md-4 d-flex flex-column">
-                    <label class="small text-muted">Adresse</label>
-                    <div class="flex-grow-1">
-                      <p class="fw-bold">{{ beneficiaire.adresse || 'N/A' }}</p>
-                    </div>
+              
+              <!-- Informations Adhésion -->
+              <div class="mt-3 pt-3 border-top">
+                <div class="row">
+                  <div class="col-md-6">
+                    <label class="text-muted small mb-1">Dénomination Famille</label>
+                    <p class="mb-0 fw-bold">{{ beneficiaire.adhesion?.denomination || 'N/A' }}</p>
+                    <small class="text-muted">Type: {{ beneficiaire.adhesion?.adhesionType || 'FAMILLE' }}</small>
                   </div>
-                  <div class="col-md-4 d-flex flex-column">
-                    <label class="small text-muted">Région</label>
-                    <div class="flex-grow-1">
-                      <p class="fw-bold">{{ beneficiaire.region || getRegionName(beneficiaire.regionId) || 'N/A' }}</p>
-                    </div>
-                  </div>
-                  <div class="col-md-4 d-flex flex-column">
-                    <label class="small text-muted">Département</label>
-                    <div class="flex-grow-1">
-                      <p class="fw-bold">{{ beneficiaire.departement || getDepartementName(beneficiaire.departementId) || 'N/A' }}</p>
+                  <div class="col-md-6">
+                    <label class="text-muted small mb-1">Paiement</label>
+                    <div class="d-flex align-items-center">
+                      <span class="badge me-2" [ngClass]="beneficiaire.adhesion?.estPaye ? 'bg-success' : 'bg-danger'">
+                        {{ beneficiaire.adhesion?.estPaye ? 'PAYÉ' : 'NON PAYÉ' }}
+                      </span>
+                      <small class="text-muted">
+                        Cotisation: {{ getMontantCotisation() }} FCFA
+                      </small>
                     </div>
                   </div>
                 </div>
               </div>
+            </div> <!-- Fermeture de la div.card card-body bg-light -->
+          </div> <!-- Fermeture de la div.col-12 -->
+        </div> <!-- Fermeture de la div.row mb-4 -->
+
+        <!-- Address Section -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <h4 class="border-bottom pb-2">
+              <i class="fas fa-home text-primary me-2"></i>Adresse
+            </h4>
+            <div class="row">
+              <div class="col-md-4">
+                <p><strong>Adresse:</strong><br>{{ beneficiaire.adresse || 'N/A' }}</p>
+              </div>
+              <div class="col-md-4">
+                <p><strong>Région:</strong><br>{{ beneficiaire.region || getRegionName(beneficiaire.regionId) || 'N/A' }}</p>
+              </div>
+              <div class="col-md-4">
+                <p><strong>Département:</strong><br>{{ beneficiaire.departement || getDepartementName(beneficiaire.departementId) || 'N/A' }}</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
+
+        <!-- Affiliation Section -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <h4 class="border-bottom pb-2">
+              <i class="fas fa-users text-primary me-2"></i>Informations d'affiliation
+            </h4>
+            <div class="row">
+           <div class="col-md-3">
+                      <p> <strong>Date adhésion:</strong><br>  {{beneficiaire?.adhesion?.dateAdhesion 
+      ? formatDated(beneficiaire.adhesion?.dateAdhesion)
+      : 'N/A' }}
+  </p>
+                  </div>
+              <div class="col-md-3">
+                <p><strong>Régime:</strong><br>Contributif</p>
+              </div>
+             
+              <div class="col-md-3">
+                <p><strong>Type adhésion:</strong><br>{{ beneficiaire.adhesion?.adhesionType || beneficiaire.typeAdhesion || 'Famille' }}</p>
+              </div>
+             <div class="col-md-3">
+                    <p><strong>Type bénéficiaire:</strong><br>{{ getCategorieTypeBeneficiaire() }}</p>
+                  </div>
+                
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-4">
+                <p><strong>Paquet de soins:</strong><br>{{ getPaquetSoinLibelle() }}</p>
+              </div>
+              <div class="col-md-4">
+                <p><strong>Taux couverture:</strong><br>{{ getTauxCouverture() }}%</p>
+              </div>
+              <div class="col-md-4">
+                <p><strong>Date enregistrement:</strong><br>{{ beneficiaire.dateInsert ? formatDate(beneficiaire.dateInsert) : 'N/A' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coverage Period -->
+        <div class="row">
+          <div class="col-12">
+            <h4 class="border-bottom pb-2">
+              <i class="fas fa-calendar-check text-primary me-2"></i>Période de couverture
+            </h4>
+            <div class="row align-items-center">
+              <div class="col-md-4">
+                <p><strong>Date début:</strong><br>{{ beneficiaire.dateDebutc ? formatDate(beneficiaire.dateDebutc) : 'N/A' }}</p>
+              </div>
+              <div class="col-md-4">
+                <p><strong>Date fin:</strong><br>{{ beneficiaire.dateFinc ? formatDate(beneficiaire.dateFinc) : 'N/A' }}</p>
+              </div>
+              <div class="col-md-4 text-center">
+                <div class="d-flex align-items-center justify-content-center">
+                  <div class="me-3">
+                    <div class="fs-4 fw-bold">{{ getDaysRemaining() }}</div>
+                    <small class="text-muted">jours restants</small>
+                  </div>
+                  <div [ngClass]="{'text-success': isCardValid(), 'text-danger': !isCardValid()}">
+                    <i class="fas" [ngClass]="{'fa-check-circle fa-3x': isCardValid(), 'fa-times-circle fa-3x': !isCardValid()}"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="mt-3">
+              <div class="progress" style="height: 25px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                     [ngClass]="{'bg-success': isCardValid(), 'bg-danger': !isCardValid()}"
+                     [style.width]="getProgress() + '%'">
+                  {{ getProgress().toFixed(1) }}%
+                </div>
+              </div>
+              <div class="d-flex justify-content-between mt-2">
+                <small>{{ beneficiaire.dateDebutc ? formatDate(beneficiaire.dateDebutc) : 'N/A' }}</small>
+                <small>{{ beneficiaire.dateFinc ? formatDate(beneficiaire.dateFinc) : 'N/A' }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- Fermeture de la div.card-body -->
+    </div> <!-- Fermeture de la div.card shadow-lg -->
+
+  </div> <!-- Fermeture de la div.container -->
 </main>
 
-<!-- Footer compact -->
-<footer class="bg-dark text-white py-3">
-  <div class="container-fluid">
-    <div class="row align-items-center">
+<!-- Footer -->
+<footer class="bg-dark text-white py-4 mt-4">
+  <div class="container">
+    <div class="row">
       <div class="col-md-4">
-        <h6 class="mb-0">COUVERTURE SANITAIRE UNIVERSELLE</h6>
-        <small>© {{ today.getFullYear() }} CSU Sénégal - Version 1.0</small>
+        <h6>COUVERTURE SANITAIRE UNIVERSELLE</h6>
+        <small>République du Sénégal</small>
       </div>
       <div class="col-md-4 text-center">
-        <small class="text-muted">Système de vérification des cartes bénéficiaires</small>
+        <small>© {{ today.getFullYear() }} CSU Sénégal</small><br>
+        <small class="text-muted">Version 1.0</small>
       </div>
       <div class="col-md-4 text-end">
         <small>
-          <i class="fas fa-phone me-1"></i> 33 800 00 00
-          <i class="fas fa-envelope ms-3 me-1"></i> contact@csu.sn
+          <i class="fas fa-phone me-1"></i> 33 800 00 00<br>
+          <i class="fas fa-envelope me-1"></i> contact@csu.sn
         </small>
       </div>
     </div>
@@ -364,7 +356,7 @@ import * as QRCode from 'qrcode';
 </footer>
   `,
   styles: [`
-/* =========================
+   /* =========================
    VARIABLES GLOBALES
    ========================= */
 :root {
@@ -373,12 +365,10 @@ import * as QRCode from 'qrcode';
   --success: #198754;
   --danger: #dc3545;
   --warning: #ffc107;
-  --info: #0dcaf0;
   --light-bg: #f8f9fa;
   --text-dark: #212529;
   --border-soft: #e3e6ea;
   --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --purple: #6f42c1;
 }
 
 /* =========================
@@ -388,11 +378,9 @@ body {
   background-color: #f4f6f9;
   color: var(--text-dark);
   font-family: "Segoe UI", Roboto, Arial, sans-serif;
-  overflow: hidden;
-  height: 100vh;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1, h2, h3, h4 {
   font-weight: 600;
 }
 
@@ -401,12 +389,10 @@ h1, h2, h3, h4, h5, h6 {
    ========================= */
 header {
   border-bottom: 3px solid var(--primary);
-  height: 60px;
 }
 
 header h1 {
   letter-spacing: 0.5px;
-  font-size: 1.1rem;
 }
 
 header img {
@@ -414,57 +400,97 @@ header img {
 }
 
 /* =========================
-   MAIN LAYOUT
-   ========================= */
-main {
-  min-height: auto;
-  overflow-y: auto;
-}
-
-/* =========================
-   CARDS
+   CARTES
    ========================= */
 .card {
-  border-radius: 8px;
+  border-radius: 12px;
   border: none;
-  transition: transform 0.2s;
 }
 
-.card:hover {
-  transform: translateY(-2px);
-}
-
-.card.shadow-sm {
-  box-shadow: var(--shadow-soft) !important;
+.card.shadow,
+.card.shadow-lg {
+  box-shadow: var(--shadow-soft);
 }
 
 .card-header {
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-  padding: 0.75rem 1rem;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  padding: 1rem 1.5rem;
 }
 
-.card-header h5 {
+.card-header h3 {
   font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.card-body {
-  padding: 1rem;
 }
 
 /* =========================
-   STATUS BADGES
+   ETATS CARTE
    ========================= */
+.bg-success,
+.bg-danger {
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.15),
+    rgba(0, 0, 0, 0.1)
+  );
+}
+
+/* =========================
+   IDENTITÉ BÉNÉFICIAIRE
+   ========================= */
+.rounded-circle {
+  border: 4px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 .badge {
   font-weight: 500;
   letter-spacing: 0.3px;
-  border-radius: 20px;
-  padding: 0.35em 0.65em;
 }
 
-.badge.bg-purple {
-  background-color: var(--purple) !important;
+/* Matricule */
+.badge.bg-primary {
+  background-color: var(--primary);
+  padding: 0.6rem 1rem;
+}
+
+/* =========================
+   SECTIONS
+   ========================= */
+h4 {
+  margin-bottom: 1rem;
+}
+
+h4 i {
+  opacity: 0.85;
+}
+
+.border-bottom {
+  border-color: var(--border-soft) !important;
+}
+
+/* Bloc informations */
+.card-body.bg-light {
+  background-color: var(--light-bg) !important;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+}
+
+/* Labels */
+label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* =========================
+   LISTES & TEXTES
+   ========================= */
+p {
+  margin-bottom: 0.5rem;
+}
+
+small.text-muted {
+  font-size: 0.8rem;
 }
 
 /* =========================
@@ -478,107 +504,69 @@ main {
 
 .progress-bar {
   font-weight: 600;
-  font-size: 0.75rem;
-  line-height: 20px;
+  transition: width 1.5s ease-in-out;
 }
 
 /* =========================
-   QR CODE & PHOTO
+   BOUTONS
    ========================= */
-.photo-container img {
-  object-fit: cover;
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
 }
 
-.qr-code-container canvas {
+.btn-light {
+  background-color: #ffffff;
   border: 1px solid var(--border-soft);
-  border-radius: 4px;
-  padding: 4px;
-  background: white;
+}
+
+.btn-light:hover {
+  background-color: var(--light-bg);
 }
 
 /* =========================
-   UTILITY CLASSES
+   LOADING
    ========================= */
-.text-small {
-  font-size: 0.85rem;
-}
-
-.flex-grow-1 {
-  flex-grow: 1;
+.spinner-border {
+  border-width: 0.3em;
 }
 
 /* =========================
    FOOTER
    ========================= */
 footer {
-  height: 60px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
 }
 
 footer h6 {
   font-weight: 600;
 }
 
-/* =========================
-   CUSTOM SCROLLBAR
-   ========================= */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+footer small {
+  opacity: 0.85;
 }
 
 /* =========================
    RESPONSIVE
    ========================= */
 @media (max-width: 768px) {
-  body {
-    overflow-y: auto;
-  }
-  
-  .h-100 {
-    height: auto !important;
-  }
-  
   header h1 {
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
-  
+
   .card-body {
-    padding: 0.75rem !important;
+    padding: 1.2rem !important;
   }
-  
+
   .text-end {
     text-align: center !important;
     margin-top: 0.5rem;
   }
 }
 
-@media (max-width: 1200px) {
-  :host {
-    font-size: 14px;
-  }
-  
-  .card-header h5 {
-    font-size: 0.9rem;
-  }
-}
   `]
 })
 export class AppComponent implements OnInit {
-  // Le reste du code TypeScript reste identique à votre version originale
   loading = true;
   error = false;
   errorMessage = '';
@@ -595,8 +583,21 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.currentUrl = window.location.href;
+    console.log('🌐 URL actuelle:', this.currentUrl);
+    
+    const debugInfo = {
+      url: this.currentUrl,
+      port: window.location.port,
+      search: window.location.search,
+      hostname: window.location.hostname,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log('🔍 Debug info:', debugInfo);
     
     const code = this.extractCodeAllMethods();
+    
+    console.log('🔑 Code final:', code);
     
     if (code) {
       this.loadBeneficiaire(code);
@@ -607,38 +608,60 @@ export class AppComponent implements OnInit {
     }
   }
 
-  // Les méthodes restent identiques à votre version originale
-  formatDated(date?: string): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('fr-FR');
+  private handleError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    } else if (typeof error === 'string') {
+      return error;
+    } else {
+      return String(error);
+    }
   }
-
-  extractCodeAllMethods(): string | null {
-    let code: string | null = null;
-    const urlParams = new URLSearchParams(window.location.search);
-    code = urlParams.get('code');
-    
-    if (!code && window.location.hash) {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      code = hashParams.get('code');
-    }
-    
-    if (!code) {
-      const url = window.location.href;
-      const regex = /[?&]code=([^&]*)/;
-      const match = url.match(regex);
-      if (match) {
-        code = decodeURIComponent(match[1]);
-      }
-    }
-    
-    if (code === 'codeImmatriculation') {
-      return null;
-    }
-    
-    return code;
+formatDated(date?: string): string {
+  if (!date) {
+    return 'N/A';
   }
+  return new Date(date).toLocaleDateString('fr-FR');
+}
 
+ extractCodeAllMethods(): string | null {
+  console.log('🔍 URL complète:', window.location.href);
+  console.log('🔍 Search:', window.location.search);
+  
+  // Essayer différentes méthodes
+  let code: string | null = null;
+  
+  // Méthode 1: Depuis l'URL (ex: ?code=ABC123)
+  const urlParams = new URLSearchParams(window.location.search);
+  code = urlParams.get('code');
+  
+  // Méthode 2: Depuis les fragments (ex: #code=ABC123)
+  if (!code && window.location.hash) {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    code = hashParams.get('code');
+  }
+  
+  // Méthode 3: Parsing manuel de l'URL
+  if (!code) {
+    const url = window.location.href;
+    const regex = /[?&]code=([^&]*)/;
+    const match = url.match(regex);
+    if (match) {
+      code = decodeURIComponent(match[1]);
+    }
+  }
+  
+  console.log('🔍 Code extrait:', code);
+  
+  // VÉRIFICATION CRITIQUE : le code ne doit pas être "codeImmatriculation"
+  if (code === 'codeImmatriculation') {
+    console.error('❌ ERREUR: Le code est "codeImmatriculation" au lieu de la vraie valeur');
+    return null;
+  }
+  
+  return code;
+}
+  // NOUVELLE MÉTHODE : Récupérer la catégorie du type bénéficiaire
   getCategorieTypeBeneficiaire(): string {
     if (!this.beneficiaire?.typeBeneficiaire) return 'CLASSIQUE';
     
@@ -646,19 +669,23 @@ export class AppComponent implements OnInit {
       return this.beneficiaire.typeBeneficiaire;
     }
     
+    // Récupérer le libellé de la catégorie (categorieTB.libelle)
     return this.beneficiaire.typeBeneficiaire?.categorieTB?.libelle || 
            this.beneficiaire.typeBeneficiaire.libelle || 
            'CLASSIQUE';
   }
-
   loadBeneficiaire(code: string): void {
+    console.log('📞 Appel API avec code:', code);
+    
     this.apiService.getBeneficiaire(code).subscribe({
       next: (data) => {
+        console.log('✅ Données reçues:', data);
         this.beneficiaire = data;
         this.loading = false;
         setTimeout(() => this.generateQRCode(), 100);
       },
       error: (err) => {
+        console.error('❌ Erreur API:', err);
         this.error = true;
         this.errorMessage = `Erreur API: ${err.message || err.statusText}`;
         this.loading = false;
@@ -679,7 +706,7 @@ export class AppComponent implements OnInit {
     });
     
     QRCode.toCanvas(this.qrCanvas.nativeElement, qrData, {
-      width: 100,
+      width: 120,
       margin: 1,
       color: {
         dark: '#000000',
@@ -690,6 +717,7 @@ export class AppComponent implements OnInit {
     });
   }
 
+  // Méthodes utilitaires pour gérer le typeBeneficiaire qui peut être string ou TypeBeneficiaire
   getTypeBeneficiaireLibelle(): string {
     if (!this.beneficiaire?.typeBeneficiaire) return 'CLASSIQUE';
     
@@ -757,16 +785,14 @@ export class AppComponent implements OnInit {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > 0 ? diffDays : 0;
   }
-
-  getRelationLibelle(): string {
+    getRelationLibelle(): string {
     if (!this.beneficiaire?.relation) return 'Lui-même';
     if (typeof this.beneficiaire.relation === 'string') {
       return this.beneficiaire.relation;
     }
     return this.beneficiaire.relation.libelle || 'Lui-même';
   }
-
-  getTitulaireNomComplet(): string {
+ getTitulaireNomComplet(): string {
     if (!this.beneficiaire?.titulaire) return 'Lui-même';
     return `${this.beneficiaire.titulaire.prenom || ''} ${this.beneficiaire.titulaire.nom || ''}`.trim() || 'Lui-même';
   }
@@ -779,6 +805,10 @@ export class AppComponent implements OnInit {
     }
     
     return this.beneficiaire.typeBeneficiaire.categorieTB?.libelle || 'CLASSIQUE';
+  }
+
+  getStructureInfo(): string {
+    return `Structure ID: ${this.beneficiaire?.structureId || 'N/A'}`;
   }
 
   formatDateTime(dateTimeString: string): string {
@@ -830,10 +860,20 @@ export class AppComponent implements OnInit {
     if (!regionId) return '';
     
     const regions: {[key: number]: string} = {
-      1: 'Dakar', 2: 'Thiès', 3: 'Diourbel', 4: 'Saint-Louis',
-      5: 'Kaolack', 6: 'Kolda', 7: 'Ziguinchor', 8: 'Tambacounda',
-      9: 'Matam', 10: 'Fatick', 11: 'Louga', 12: 'Kaffrine',
-      13: 'Kédougou', 14: 'Sédhiou'
+      1: 'Dakar',
+      2: 'Thiès',
+      3: 'Diourbel',
+      4: 'Saint-Louis',
+      5: 'Kaolack',
+      6: 'Kolda',
+      7: 'Ziguinchor',
+      8: 'Tambacounda',
+      9: 'Matam',
+      10: 'Fatick',
+      11: 'Louga',
+      12: 'Kaffrine',
+      13: 'Kédougou',
+      14: 'Sédhiou'
     };
     return regions[regionId] || `Région ${regionId}`;
   }
