@@ -1,8 +1,7 @@
 // =============================================
-// server.js - Serveur Proxy avec Token Dynamique
+// server.js - Version corrigée
 // =============================================
 
-// 1. IMPORTER LES MODULES
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const cors = require('cors');
@@ -10,73 +9,83 @@ const path = require('path');
 const axios = require('axios');
 const NodeCache = require('node-cache');
 
-// 2. CONFIGURATION DE BASE
+// Charger les variables d'environnement
+require('dotenv').config();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 3. MIDDLEWARES
-app.use(cors()); // Autoriser toutes les origines
-app.use(express.json()); // Lire les données JSON
+// Configuration CORS
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
 
-// 4. CACHE POUR LE TOKEN (durée de vie: 55 minutes)
+app.use(express.json());
+
+// Cache pour le token (55 minutes)
 const tokenCache = new NodeCache({ 
-  stdTTL: 3300, // 55 minutes en secondes
-  checkperiod: 60 // Vérifier toutes les minutes
+  stdTTL: 3300,
+  checkperiod: 60
 });
 
-// 5. FONCTION : OBTENIR UN NOUVEAU TOKEN
+// =============================================
+// FONCTIONS D'AUTHENTIFICATION
+// =============================================
+
 async function obtenirNouveauToken() {
-  console.log('🔄 Tentative de connexion à l\'API...');
+  console.log('🔄 Connexion à l\'API d\'authentification...');
   
   try {
-    // Configuration de la requête
     const reponse = await axios.post(
       'https://mdamsigicmu.sec.gouv.sn/api/authenticate',
       {
-        username: process.env.API_USERNAME,
-        password: process.env.API_PASSWORD
+        username: process.env.API_USERNAME || 'caisse_sencsu',
+        password: process.env.API_PASSWORD || 'passer'
       },
       {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        timeout: 10000 // 10 secondes maximum
+        timeout: 15000
       }
     );
 
-    // Vérifier la réponse
     if (reponse.data && reponse.data.token) {
       const token = reponse.data.token;
-      console.log('✅ Token obtenu avec succès !');
+      console.log('✅ Token obtenu avec succès');
       return token;
     } else {
+      console.error('❌ Réponse API invalide:', reponse.data);
       throw new Error('Token non trouvé dans la réponse');
     }
     
   } catch (erreur) {
-    console.error('❌ Erreur lors de l\'authentification :', erreur.message);
+    console.error('❌ Erreur d\'authentification:');
     
-    // Si échec, utiliser le token de secours
+    if (erreur.response) {
+      console.error('Status:', erreur.response.status);
+      console.error('Données:', erreur.response.data);
+    }
+    
+    // Token de secours
     if (process.env.FALLBACK_TOKEN) {
       console.log('⚠️ Utilisation du token de secours');
       return process.env.FALLBACK_TOKEN;
     }
     
-    throw erreur;
+    throw new Error(`Authentification échouée: ${erreur.message}`);
   }
 }
 
-// 6. FONCTION : OBTENIR LE TOKEN COURANT
 async function obtenirTokenCourant() {
-  // Vérifier si on a déjà un token en cache
   let token = tokenCache.get('token_jwt');
   
-  // Si pas de token, en obtenir un nouveau
   if (!token) {
-    console.log('📝 Pas de token en cache, nouvelle authentification...');
+    console.log('📝 Authentification nécessaire...');
     token = await obtenirNouveauToken();
-    
-    // Stocker dans le cache
     tokenCache.set('token_jwt', token);
     tokenCache.set('derniere_auth', Date.now());
   }
@@ -84,127 +93,162 @@ async function obtenirTokenCourant() {
   return token;
 }
 
-// 7. ROUTE : VÉRIFIER L'ÉTAT DU SERVEUR
-app.get('/api/health', (req, res) => {
+// =============================================
+// ROUTES DE DIAGNOSTIC
+// =============================================
+
+app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
-    message: 'Serveur proxy actif',
+    service: 'Proxy CSU Verification',
     timestamp: new Date().toISOString(),
-    tokenPresent: !!tokenCache.get('token_jwt')
+    env: {
+      api_username: process.env.API_USERNAME ? 'configuré' : 'non configuré',
+      node_env: process.env.NODE_ENV || 'non défini'
+    }
   });
 });
 
-// 8. ROUTE : VÉRIFIER L'AUTHENTIFICATION
-app.get('/api/auth/etat', (req, res) => {
+app.get('/auth/status', (req, res) => {
   const token = tokenCache.get('token_jwt');
   const derniereAuth = tokenCache.get('derniere_auth');
   
   res.json({
     authentifie: !!token,
-    dernierAuth: derniereAuth ? new Date(derniereAuth).toLocaleString() : null,
-    enCache: !!token,
-    cacheKeys: tokenCache.keys()
+    token_present: !!token,
+    dernier_auth: derniereAuth ? new Date(derniereAuth).toISOString() : null,
+    cache_taille: tokenCache.keys().length
   });
 });
 
-// 9. PROXY DYNAMIQUE POUR L'API
-const proxyApi = createProxyMiddleware({
-  target: 'https://mdamsigicmu.sec.gouv.sn/services/udam',
+// =============================================
+// PROXY POUR L'API UDAM
+// =============================================
+
+const proxyOptions = {
+  target: 'https://mdamsigicmu.sec.gouv.sn',
   changeOrigin: true,
   secure: false,
   pathRewrite: {
-    '^/api': '' // Retire "/api" de l'URL
+    // CORRECTION ICI : Transforme /api/... en /services/udam/...
+    '^/api': '/services/udam'
   },
+  logLevel: 'debug',
   
-  // AVANT d'envoyer la requête à l'API
   onProxyReq: async (proxyReq, req, res) => {
     try {
-      // 1. Obtenir le token actuel
+      console.log(`🔗 Proxy requête: ${req.method} ${req.originalUrl}`);
+      
+      // Obtenir le token
       const token = await obtenirTokenCourant();
       
-      // 2. Ajouter le token dans les headers
+      // Ajouter les headers
       proxyReq.setHeader('Authorization', `Bearer ${token}`);
+      proxyReq.setHeader('Accept', 'application/json');
       
-      console.log(`🔗 Proxy: ${req.method} ${req.path} avec token`);
+      console.log(`✅ Headers ajoutés pour ${req.path}`);
       
     } catch (erreur) {
-      console.error('❌ Impossible d\'obtenir le token :', erreur.message);
+      console.error('❌ Erreur proxy:', erreur.message);
       
-      // Répondre avec une erreur claire
       res.status(503).json({
-        error: 'Service temporairement indisponible',
-        message: 'Authentification impossible',
-        conseil: 'Vérifiez les identifiants dans le fichier .env'
+        error: 'Service indisponible',
+        message: 'Impossible d\'authentifier la requête',
+        details: erreur.message,
+        timestamp: new Date().toISOString()
       });
       
-      // Arrêter la requête proxy
       proxyReq.destroy();
     }
   },
   
-  // APRÈS avoir reçu la réponse de l'API
   onProxyRes: (proxyRes, req, res) => {
-    // Si le token est expiré (401), le supprimer du cache
+    console.log(`📤 Réponse API: ${proxyRes.statusCode} ${req.method} ${req.path}`);
+    
+    // Si token expiré
     if (proxyRes.statusCode === 401) {
-      console.log('🔄 Token expiré, suppression du cache...');
+      console.log('🔄 Token expiré, nettoyage cache...');
       tokenCache.del('token_jwt');
     }
+    
+    // Headers CORS
+    proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+    proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
+  },
+  
+  onError: (err, req, res) => {
+    console.error('🔥 Erreur proxy:', err.message);
+    res.status(500).json({
+      error: 'Erreur de connexion',
+      message: err.message,
+      timestamp: new Date().toISOString()
+    });
   }
-});
+};
 
-// 10. APPLIQUER LE PROXY
-app.use('/api', proxyApi);
+// Appliquer le proxy
+app.use('/api', createProxyMiddleware(proxyOptions));
 
-// 11. SERVIR L'APPLICATION ANGULAR
-app.use(express.static(path.join(__dirname, 'dist/carte-verification/browser')));
+// =============================================
+// SERVIR ANGULAR
+// =============================================
 
-// 12. TOUTES LES AUTRES ROUTES → ANGULAR
+const angularPath = path.join(__dirname, 'dist/carte-verification/browser');
+app.use(express.static(angularPath, {
+  maxAge: '1h',
+  index: false
+}));
+
+// Toutes les autres routes -> Angular
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist/carte-verification/browser/index.html'));
+  res.sendFile(path.join(angularPath, 'index.html'));
 });
 
-// 13. INITIALISATION AU DÉMARRAGE
-async function demarrerApplication() {
-  console.log('🚀 Démarrage du serveur...');
+// =============================================
+// INITIALISATION
+// =============================================
+
+async function initialiser() {
+  console.log('🚀 Initialisation du proxy...');
   console.log(`📁 Port: ${PORT}`);
-  console.log(`📁 Dossier Angular: dist/carte-verification/browser`);
+  console.log(`📁 API Target: https://mdamsigicmu.sec.gouv.sn/services/udam`);
   
   try {
-    // Obtenir un token au démarrage
+    // Obtenir un premier token
     const token = await obtenirNouveauToken();
     tokenCache.set('token_jwt', token);
     tokenCache.set('derniere_auth', Date.now());
     
-    console.log('✅ Serveur prêt avec token valide !');
+    console.log('✅ Proxy initialisé avec succès!');
     
-    // Rafraîchir le token automatiquement toutes les 50 minutes
+    // Rafraîchir automatiquement
     setInterval(async () => {
       try {
-        console.log('🔄 Rafraîchissement automatique du token...');
         const nouveauToken = await obtenirNouveauToken();
         tokenCache.set('token_jwt', nouveauToken);
         tokenCache.set('derniere_auth', Date.now());
-        console.log('✅ Token rafraîchi automatiquement');
-      } catch (erreur) {
-        console.error('⚠️ Échec du rafraîchissement automatique:', erreur.message);
+        console.log('🔄 Token rafraîchi automatiquement');
+      } catch (err) {
+        console.error('⚠️ Rafraîchissement automatique échoué:', err.message);
       }
     }, 50 * 60 * 1000); // 50 minutes
     
   } catch (erreur) {
-    console.error('⚠️ Attention: Échec de l\'authentification initiale');
-    console.error('⚠️ Message:', erreur.message);
-    console.log('ℹ️ Le serveur démarre quand même...');
-    console.log('ℹ️ Le token sera obtenu à la première requête API');
+    console.error('⚠️ Initialisation échouée:', erreur.message);
+    console.log('⚠️ Le proxy démarre quand même, premier token à la première requête');
   }
 }
 
-// 14. DÉMARRER LE SERVEUR
+// =============================================
+// DÉMARRAGE
+// =============================================
+
 app.listen(PORT, () => {
-  console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
-  demarrerApplication();
+  console.log(`✅ Serveur démarré: http://localhost:${PORT}`);
+  initialiser();
 });
 
-// 15. GESTION DES ERREURS NON ATTRAVÉES
-process.on('uncaughtException', (erreur) => {
-  console.error('🔥 ERREUR GRAVE:', erreur);
+// Gestion des erreurs
+process.on('uncaughtException', (err) => {
+  console.error('🔥 ERREUR NON GÉRÉE:', err);
 });
