@@ -1,0 +1,47 @@
+name: Auto Update CSU Token
+
+on:
+  schedule:
+    # Toutes les 5 heures
+    - cron: '0 */5 * * *'
+  workflow_dispatch:  # Permet de déclencher manuellement
+
+jobs:
+  update-token:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install axios
+      
+    - name: Configure Git
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        
+    - name: Run token updater
+      run: node scripts/auto-update-token.js
+      env:
+        # Optionnel: Variables d'environnement pour les credentials
+        CSU_USERNAME: ${{ secrets.CSU_USERNAME }}
+        CSU_PASSWORD: ${{ secrets.CSU_PASSWORD }}
+        
+    - name: Check for changes
+      id: git-check
+      run: |
+        git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+        
+    - name: Deploy to Render (via webhook)
+      if: steps.git-check.outputs.changes == 'true'
+      run: |
+        curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
