@@ -19,7 +19,7 @@ app.use((req, res, next) => {
 // 3. Proxy API CSU avec token automatique
 const apiProxy = createProxyMiddleware({
   // target: 'https://mdamsigicmu.sec.gouv.sn/services/udam',
-  target:'http://gestamo.anacmu.sn:3031/api',
+  target:'http://gestamo.anacmu.sn:3031',
   changeOrigin: true,
   secure: false,
   pathRewrite: {
