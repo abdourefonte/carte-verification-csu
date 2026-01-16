@@ -1,47 +1,149 @@
-name: Auto Update CSU Token
+name: 🤖 Auto Update CSU Token
 
 on:
   schedule:
-    # Toutes les 5 heures
+    # Toutes les 5 heures (à minuit, 5h, 10h, 15h, 20h UTC)
     - cron: '0 */5 * * *'
-  workflow_dispatch:  # Permet de déclencher manuellement
+  
+  # Permet de déclencher manuellement depuis GitHub
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Forcer la mise à jour même sans changement'
+        required: false
+        default: 'false'
 
 jobs:
-  update-token:
+  update-and-push:
     runs-on: ubuntu-latest
     
+    # PERMISSIONS ESSENTIELLES - permet au workflow de pousser des commits
+    permissions:
+      contents: write
+      actions: read
+    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        
-    - name: Install dependencies
-      run: npm install axios
+      # 1. Récupération du code avec token d'accès
+      - name: 🔄 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # Important pour push
       
-    - name: Configure Git
-      run: |
-        git config --global user.name "GitHub Actions Bot"
-        git config --global user.email "actions@github.com"
-        
-    - name: Run token updater
-      run: node scripts/auto-update-token.js
-      env:
-        # Optionnel: Variables d'environnement pour les credentials
-        CSU_USERNAME: ${{ secrets.CSU_USERNAME }}
-        CSU_PASSWORD: ${{ secrets.CSU_PASSWORD }}
-        
-    - name: Check for changes
-      id: git-check
-      run: |
-        git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
-        
-    - name: Deploy to Render (via webhook)
-      if: steps.git-check.outputs.changes == 'true'
-      run: |
-        curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+      # 2. Configuration de Node.js
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      # 3. Installation d'axios (si nécessaire)
+      - name: 📦 Install dependencies
+        run: |
+          if [ ! -f "package.json" ]; then
+            echo '{"name":"token-updater","version":"1.0.0"}' > package.json
+          fi
+          npm install axios --save
+      
+      # 4. Configuration Git pour GitHub Actions
+      - name: 🔧 Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+      
+      # 5. Exécution du script de mise à jour
+      - name: 🔐 Update JWT Token
+        id: update-token
+        run: |
+          echo "=== DÉMARRAGE MISE À JOUR TOKEN ==="
+          echo "Heure: $(date)"
+          
+          # Sauvegarder l'ancien token pour comparaison
+          OLD_TOKEN_HASH=""
+          if [ -f "config.js" ]; then
+            OLD_TOKEN_HASH=$(grep -o "Bearer ey[^']*" config.js | head -1 | md5sum | cut -d' ' -f1 || echo "")
+          fi
+          
+          # Exécuter votre script existant
+          node scripts/auto-update-token.js
+          
+          # Vérifier si le token a changé
+          NEW_TOKEN_HASH=$(grep -o "Bearer ey[^']*" config.js | head -1 | md5sum | cut -d' ' -f1 || echo "")
+          
+          if [ "$OLD_TOKEN_HASH" != "$NEW_TOKEN_HASH" ] || [ "${{ github.event.inputs.force }}" = "true" ]; then
+            echo "✅ Token modifié ou mise à jour forcée"
+            echo "token_changed=true" >> $GITHUB_OUTPUT
+            
+            # Extraire un aperçu du nouveau token
+            TOKEN_PREVIEW=$(grep -o "Bearer ey[^']*" config.js | head -1 | cut -c1-30 || echo "")
+            echo "token_preview=${TOKEN_PREVIEW}..." >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️ Token identique - aucun changement détecté"
+            echo "token_changed=false" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "=== FIN MISE À JOUR ==="
+      
+      # 6. Commit et push si le token a changé
+      - name: 📤 Push to GitHub (déclenche Render)
+        if: steps.update-token.outputs.token_changed == 'true'
+        run: |
+          echo "🚀 Préparation du push GitHub..."
+          
+          # Ajouter les fichiers modifiés
+          git add config.js
+          
+          # Ajouter aussi le fichier log s'il existe
+          if [ -f "token-update.log" ]; then
+            git add token-update.log
+          fi
+          
+          # Créer le commit
+          git commit -m "🤖 Auto-update: Token JWT renouvelé
+          
+          • Token actualisé automatiquement
+          • Date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          • Workflow: ${{ github.workflow }} #${{ github.run_number }}
+          • Commit SHA: ${{ github.sha }}
+          
+          [skip ci]" || echo "Aucun changement à committer"
+          
+          # Pull avant push pour éviter conflits
+          echo "🔄 Pull des derniers changements..."
+          git pull --rebase origin main || echo "Pull échoué, continuation..."
+          
+          # Push vers GitHub (cela déclenchera Render)
+          echo "📤 Push vers GitHub..."
+          git push origin main
+          
+          echo "✅ Push réussi ! Render se déploiera automatiquement."
+      
+      # 7. Message si aucun changement
+      - name: ℹ️ No changes needed
+        if: steps.update-token.outputs.token_changed == 'false' && github.event_name == 'schedule'
+        run: |
+          echo "========================================"
+          echo "✅ Aucune mise à jour nécessaire"
+          echo "Le token est toujours valide"
+          echo "Prochaine vérification dans 5 heures"
+          echo "========================================"
+      
+      # 8. Rapport final
+      - name: 📊 Final Report
+        run: |
+          echo "========================================"
+          echo "📋 RAPPORT WORKFLOW"
+          echo "========================================"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Run ID: ${{ github.run_id }}"
+          echo "Déclencheur: ${{ github.event_name }}"
+          echo "Statut: ${{ job.status }}"
+          echo "Token changé: ${{ steps.update-token.outputs.token_changed }}"
+          
+          if [ "${{ steps.update-token.outputs.token_changed }}" = "true" ]; then
+            echo "✅ NOUVEAU TOKEN PUSHÉ"
+            echo "Render se déploiera automatiquement"
+          fi
+          
+          echo "========================================"
