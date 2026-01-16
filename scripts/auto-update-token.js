@@ -97,7 +97,7 @@ module.exports = {
     const logEntry = `
 ======================================
 ✅ TOKEN MIS À JOUR AUTOMATIQUEMENT
-======================================
+=====================================
 Date: ${new Date().toISOString()}
 Token: ${token.substring(0, 50)}...
 Prochaine mise à jour: ${new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString()}
