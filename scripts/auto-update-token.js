@@ -1,4 +1,5 @@
 // scripts/auto-update-token.js
+//  node scripts/auto-update-token.js    
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
@@ -6,7 +7,9 @@ const { execSync } = require('child_process');
 
 class TokenAutoUpdater {
   constructor() {
-    this.authUrl = 'https://mdamsigicmu.sec.gouv.sn/api/authenticate';
+    // this.authUrl = 'https://mdamsigicmu.sec.gouv.sn/api/authenticate';
+    
+    this.authUrl = 'http://gestamo.anacmu.sn:3030/api/authenticate';
     this.credentials = {
       username: 'caisse_sencsu',
       password: 'passer'
