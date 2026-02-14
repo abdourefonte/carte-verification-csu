@@ -1,14 +1,14 @@
 // config.js - AUTO-GENERATED
-// Dernière mise à jour: 2026-02-14T02:00:22.370Z
+// Dernière mise à jour: 2026-02-14T05:43:57.070Z
 
 module.exports = {
   getToken: () => {
-    return 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTc3MTEyMDYyOH0.d4GNJNFHd5QdVZfggAdzqhA11yWcwYyxsCsmhJyDIUOATYhRKaUziVrLoo7w02P9mmQJ7bPZZnb77KMZv6lLhw';
+    return 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTc3MTEzNDA0Mn0.KCCenLyR2qv8CjRBquY86ivHxhYsum5OTBUuDphr-NB4DSHCDgflJ5Z6bk-URI6mu5sCi7zFvNqQzoO51ofcmg';
   },
   
   getTokenInfo: () => {
     return {
-      lastUpdate: '2026-02-14T02:00:22.370Z',
+      lastUpdate: '2026-02-14T05:43:57.070Z',
       tokenPreview: 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1I...',
       expiresIn: '5 heures (prochaine mise à jour automatique)'
     };
