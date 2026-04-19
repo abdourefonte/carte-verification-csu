@@ -4,6 +4,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const https = require('https');
 
 class TokenAutoUpdater {
   constructor() {
@@ -43,17 +44,22 @@ class TokenAutoUpdater {
     }
   }
 
-  async fetchNewToken() {
-    console.log('🔐 Connexion à l\'API d\'authentification...');
-    
-    const response = await axios.post(this.authUrl, this.credentials);
-    
-    if (!response.data || !response.data.id_token) {
-      throw new Error('Token non trouvé dans la réponse');
-    }
-    
-    return response.data.id_token;
+async fetchNewToken() {
+  console.log('🔐 Connexion à l\'API d\'authentification...');
+  
+  // ⚠️ À utiliser uniquement pour le débogage
+  const response = await axios.post(this.authUrl, this.credentials, {
+    httpsAgent: new (require('https').Agent)({
+      rejectUnauthorized: false  // Désactive la vérification SSL
+    })
+  });
+  
+  if (!response.data || !response.data.id_token) {
+    throw new Error('Token non trouvé dans la réponse');
   }
+  
+  return response.data.id_token;
+}
 
   async updateConfigFile(token) {
     const newConfig = `// config.js - AUTO-GENERATED

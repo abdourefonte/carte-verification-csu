@@ -23,7 +23,7 @@ const apiProxy = createProxyMiddleware({
   changeOrigin: true,
   secure: false,
   pathRewrite: {
-    '^/api': ''  // Transforme /api/api/beneficiaires → /api/beneficiaires
+    '^/api': '' 
   },
   onProxyReq: (proxyReq, req, res) => {
     // Utilise le token frais de config.js
