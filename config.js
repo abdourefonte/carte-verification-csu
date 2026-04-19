@@ -1,16 +1,16 @@
-// config.js - MANUEL (avec token valide jusqu'en avril 2027)
-// Dernière mise à jour: 2026-04-19
+// config.js - AUTO-GENERATED
+// Dernière mise à jour: 2026-04-19T21:06:43.509Z
 
 module.exports = {
   getToken: () => {
-    return 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTc3NjcxNjE5N30.kI-hJNRaiBd_oZ4_6MBLBLG32CtC0X-sH0PZJUgHtlTgHL_OdGu9cv84OpW24Fwc81XWce7aTolyi4mtW3sb7A';
+    return 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfVVNFUiIsImV4cCI6MTc3NjcxOTIwNn0.Up6PN-oUPCWeFQvaKIIva8iN4_jI2dE8B81G_iZ5RLu3dRRPO3l_bOcLw2zLqoRtx1WVEC4vIHJcPxNMkyaUXQ';
   },
   
   getTokenInfo: () => {
     return {
-      lastUpdate: new Date().toISOString(),
-      tokenPreview: 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfV...',
-      expiresIn: '1 an (avril 2027)'
+      lastUpdate: '2026-04-19T21:06:43.511Z',
+      tokenPreview: 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1I...',
+      expiresIn: '5 heures (prochaine mise à jour automatique)'
     };
   }
 };
