@@ -2,84 +2,66 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const path = require('path');
-const https = require('https');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 
 const app = express();
 app.use(cors());
 
-// Logging des requêtes
-app.use((req, res, next) => {
-  console.log(`📨 ${req.method} ${req.path}`);
-  next();
-});
+// Liste de proxies publics (testés)
+const PROXIES = [
+  'http://proxy-nairobi.xyz:8080',
+  'http://103.169.142.0:8080',
+  'http://41.77.188.165:8080',
+  'http://154.113.113.70:8080',
+];
 
-// Endpoint API - Version directe sans proxy middleware
+let currentProxyIndex = 0;
+
+function getNextProxy() {
+  currentProxyIndex = (currentProxyIndex + 1) % PROXIES.length;
+  return PROXIES[currentProxyIndex];
+}
+
 app.get('/api/beneficiairess/codeImmatriculation', async (req, res) => {
   try {
     const { code } = req.query;
-    
-    if (!code) {
-      return res.status(400).json({ error: 'Code immatriculation requis' });
-    }
-    
-    // Récupérer le token depuis config.js
     const token = require('./config').getToken();
+    const proxyUrl = getNextProxy();
     
-    console.log(`🔍 Recherche du bénéficiaire avec code: ${code}`);
-    console.log(`🔑 Token utilisé: ${token.substring(0, 50)}...`);
+    console.log(`🔍 Utilisation du proxy: ${proxyUrl}`);
     
-    // Appel direct à l'API CSU
+    const proxyAgent = new HttpsProxyAgent(proxyUrl);
+    
     const response = await axios({
       method: 'GET',
-      url: `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodeURIComponent(code)}`,
-      headers: {
+      url: `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${code}`,
+      headers: { 
         'Authorization': token,
-        'Accept': 'application/json'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       },
+      httpsAgent: proxyAgent,
       timeout: 30000,
-      httpsAgent: new https.Agent({
-        rejectUnauthorized: false  // Ignore SSL pour contourner le problème
-      })
+      proxy: false // Important pour éviter conflit
     });
     
-    console.log(`✅ Succès - Status: ${response.status}`);
+    console.log(`✅ Succès via proxy ${proxyUrl}`);
     res.json(response.data);
     
   } catch (error) {
-    console.error('❌ Erreur API:', {
-      message: error.message,
-      code: error.code,
-      status: error.response?.status
-    });
-    
+    console.error('❌ Erreur:', error.message);
     res.status(500).json({ 
       error: error.message,
       code: error.code,
-      timestamp: new Date().toISOString()
+      proxy: getNextProxy()
     });
   }
 });
 
-// Endpoint de santé
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'online',
-    service: 'CSU Proxy',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Servir l'application Angular
+// Servir Angular
 app.use(express.static(path.join(__dirname, 'dist/carte-verification/browser')));
-
-// Fallback pour Angular routing
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist/carte-verification/browser/index.html'));
 });
 
-// Port d'écoute
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Serveur démarré sur le port ${PORT}`);
-  console.log(`📁 Static files: ${path.join(__dirname, 'dist/carte-verification/browser')}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
