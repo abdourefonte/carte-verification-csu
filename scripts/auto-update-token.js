@@ -1,5 +1,6 @@
 // scripts/auto-update-token.js
 //  node scripts/auto-update-token.js    
+// scripts/auto-update-token.js
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
@@ -9,57 +10,30 @@ const https = require('https');
 class TokenAutoUpdater {
   constructor() {
     this.authUrl = 'https://mdamsigicmu.sec.gouv.sn/api/authenticate';
-    
-  //  this.authUrl = 'http://gestamo.anacmu.sn:3030/api/authenticate';
     this.credentials = {
       username: 'caisse_sencsu',
-      password: 'passer'
+      password: 'passer'  // Vérifie que c'est le bon mot de passe !
     };
     this.configFile = path.join(__dirname, '../config.js');
     this.commitMessage = 'Auto-update: Token JWT renouvelé';
   }
 
-  async run() {
-    console.log('🔄 Démarrage de la mise à jour automatique du token...');
+  async fetchNewToken() {
+    console.log('🔐 Connexion à l\'API d\'authentification...');
     
-    try {
-      // 1. Récupérer un nouveau token
-      const newToken = await this.fetchNewToken();
-      console.log('✅ Nouveau token obtenu');
-      
-      // 2. Mettre à jour config.js
-      await this.updateConfigFile(newToken);
-      console.log('✅ Fichier config.js mis à jour');
-      
-      // 3. Git operations
-      this.gitAddCommitPush();
-      console.log('✅ Changements poussés sur GitHub');
-      
-      // 4. Log de succès
-      this.logSuccess(newToken);
-      
-    } catch (error) {
-      console.error('❌ Erreur lors de la mise à jour:', error.message);
-      process.exit(1);
+    const response = await axios.post(this.authUrl, this.credentials, {
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false
+      }),
+      timeout: 30000
+    });
+    
+    if (!response.data || !response.data.id_token) {
+      throw new Error('Token non trouvé dans la réponse');
     }
+    
+    return response.data.id_token;
   }
-
-async fetchNewToken() {
-  console.log('🔐 Connexion à l\'API d\'authentification...');
-  
-  // ⚠️ À utiliser uniquement pour le débogage
-  const response = await axios.post(this.authUrl, this.credentials, {
-    httpsAgent: new (require('https').Agent)({
-      rejectUnauthorized: false  // Désactive la vérification SSL
-    })
-  });
-  
-  if (!response.data || !response.data.id_token) {
-    throw new Error('Token non trouvé dans la réponse');
-  }
-  
-  return response.data.id_token;
-}
 
   async updateConfigFile(token) {
     const newConfig = `// config.js - AUTO-GENERATED

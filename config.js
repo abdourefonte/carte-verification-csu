@@ -1,5 +1,5 @@
-// config.js - AUTO-GENERATED
-// Dernière mise à jour: 2026-04-19T20:22:17.131Z
+// config.js - MANUEL (avec token valide jusqu'en avril 2027)
+// Dernière mise à jour: 2026-04-19
 
 module.exports = {
   getToken: () => {
@@ -8,9 +8,9 @@ module.exports = {
   
   getTokenInfo: () => {
     return {
-      lastUpdate: '2026-04-19T20:22:17.132Z',
-      tokenPreview: 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1I...',
-      expiresIn: '5 heures (prochaine mise à jour automatique)'
+      lastUpdate: new Date().toISOString(),
+      tokenPreview: 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1IiwiYXV0aCI6IlJPTEVfV...',
+      expiresIn: '1 an (avril 2027)'
     };
   }
 };

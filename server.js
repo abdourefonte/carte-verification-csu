@@ -1,87 +1,85 @@
-// server.js - VERSION POUR AUTOMATISATION
 const express = require('express');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const axios = require('axios');
 const cors = require('cors');
 const path = require('path');
-const config = require('./config');  // Import du token automatisé
+const https = require('https');
 
 const app = express();
-
-// 1. CORS configuration
 app.use(cors());
 
-// 2. Logging des requêtes
+// Logging des requêtes
 app.use((req, res, next) => {
-  console.log(`📨 [${new Date().toLocaleTimeString()}] ${req.method} ${req.path}`);
+  console.log(`📨 ${req.method} ${req.path}`);
   next();
 });
 
-// 3. Proxy API CSU avec token automatique
-const apiProxy = createProxyMiddleware({
-  target: 'https://mdamsigicmu.sec.gouv.sn/services/udam',
-  // target:'http://gestamo.anacmu.sn:3031',
-  changeOrigin: true,
-  secure: false,
-  pathRewrite: {
-    '^/api': '' 
-  },
-  onProxyReq: (proxyReq, req, res) => {
-    // Utilise le token frais de config.js
-    const token = config.getToken();
-    proxyReq.setHeader('Authorization', token);
-    console.log(`🔑 Token utilisé (${token.length} caractères)`);
-  },
-  onProxyRes: (proxyRes, req, res) => {
-    console.log(`📊 API Response: ${proxyRes.statusCode}`);
-  },
-  onError: (err, req, res) => {
-    console.error('❌ Proxy Error:', err.message);
+// Endpoint API - Version directe sans proxy middleware
+app.get('/api/beneficiairess/codeImmatriculation', async (req, res) => {
+  try {
+    const { code } = req.query;
+    
+    if (!code) {
+      return res.status(400).json({ error: 'Code immatriculation requis' });
+    }
+    
+    // Récupérer le token depuis config.js
+    const token = require('./config').getToken();
+    
+    console.log(`🔍 Recherche du bénéficiaire avec code: ${code}`);
+    console.log(`🔑 Token utilisé: ${token.substring(0, 50)}...`);
+    
+    // Appel direct à l'API CSU
+    const response = await axios({
+      method: 'GET',
+      url: `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${encodeURIComponent(code)}`,
+      headers: {
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      timeout: 30000,
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false  // Ignore SSL pour contourner le problème
+      })
+    });
+    
+    console.log(`✅ Succès - Status: ${response.status}`);
+    res.json(response.data);
+    
+  } catch (error) {
+    console.error('❌ Erreur API:', {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status
+    });
+    
     res.status(500).json({ 
-      error: 'Proxy Error', 
-      details: err.message,
+      error: error.message,
+      code: error.code,
       timestamp: new Date().toISOString()
     });
   }
 });
 
-app.use('/api', apiProxy);
-
-// 4. Endpoints d'information
-app.get('/token-info', (req, res) => {
-  res.json(config.getTokenInfo());
-});
-
+// Endpoint de santé
 app.get('/health', (req, res) => {
   res.json({
     status: 'online',
     service: 'CSU Proxy',
-    version: '2.0.0',
-    token_auto_update: true,
-    last_token_update: config.getTokenInfo().lastUpdate,
     timestamp: new Date().toISOString()
   });
 });
 
-// 5. Servir Angular (votre frontend)
+// Servir l'application Angular
 app.use(express.static(path.join(__dirname, 'dist/carte-verification/browser')));
 
+// Fallback pour Angular routing
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist/carte-verification/browser/index.html'));
 });
 
-// 6. Gestionnaire d'erreurs global
-app.use((err, req, res, next) => {
-  console.error('🔥 Global Error:', err.stack);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: err.message
-  });
-});
-
+// Port d'écoute
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server started on port ${PORT}`);
-  console.log(`🔐 Token auto-update: ENABLED`);
+  console.log(`🚀 Serveur démarré sur le port ${PORT}`);
   console.log(`📁 Static files: ${path.join(__dirname, 'dist/carte-verification/browser')}`);
-  console.log(`🔄 Last token update: ${config.getTokenInfo().lastUpdate}`);
 });
