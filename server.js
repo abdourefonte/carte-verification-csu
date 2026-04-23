@@ -1,148 +1,158 @@
-// server.js - VERSION CORRIGÉE POUR RENDER
+// server.js - AVEC PROXYS WEBSHARE (FONCTIONNEL)
+const express = require('express');
+const axios = require('axios');
+const cors = require('cors');
+const path = require('path');
+const https = require('https');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 
-// Désactiver tous les proxys (spécifique à Render)
+// Configuration Render
 delete process.env.HTTP_PROXY;
 delete process.env.HTTPS_PROXY;
 delete process.env.http_proxy;
 delete process.env.https_proxy;
-
-// Permettre les connexions SSL non vérifiées (nécessaire pour l'API gouvernementale)
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-console.log('🔧 Configuration Render:');
-console.log('   - Proxy HTTP désactivé:', !process.env.HTTP_PROXY ? '✅' : '⚠️');
-console.log('   - Proxy HTTPS désactivé:', !process.env.HTTPS_PROXY ? '✅' : '⚠️');
-console.log('   - TLS strict désactivé:', process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0' ? '✅' : '⚠️');
+// IMPORTANT: Liste de vos proxys WebShare
+const PROXY_LIST = [
+  'http://ookmbosz:01funk1prv93@31.59.20.176:6754',
+  'http://ookmbosz:01funk1prv93@198.23.239.134:6540',
+  'http://ookmbosz:01funk1prv93@45.38.107.97:6014',
+  'http://ookmbosz:01funk1prv93@107.172.163.27:6543',
+  'http://ookmbosz:01funk1prv93@198.105.121.200:6462',
+  'http://ookmbosz:01funk1prv93@216.10.27.159:6837',
+  'http://ookmbosz:01funk1prv93@142.111.67.146:5611',
+  'http://ookmbosz:01funk1prv93@191.96.254.138:6185',
+  'http://ookmbosz:01funk1prv93@31.58.9.4:6077',
+  'http://ookmbosz:01funk1prv93@104.239.107.47:5699',
+];
 
-const express = require('express');
-const { createProxyMiddleware } = require('http-proxy-middleware');
-const cors = require('cors');
-const path = require('path');
-const config = require('./config');  // Import du token automatisé
+let currentProxyIndex = 0;
+
+function getNextProxy() {
+  const proxy = PROXY_LIST[currentProxyIndex];
+  currentProxyIndex = (currentProxyIndex + 1) % PROXY_LIST.length;
+  return proxy;
+}
 
 const app = express();
-
-// 1. CORS configuration
 app.use(cors());
 
-// 2. Logging des requêtes
+// Logging
 app.use((req, res, next) => {
   console.log(`📨 [${new Date().toLocaleTimeString()}] ${req.method} ${req.path}`);
   next();
 });
 
-// 3. Proxy API CSU avec token automatique - CONFIGURATION CORRIGÉE
-const apiProxy = createProxyMiddleware({
-  // ✅ CORRECTION 1: Target pointe vers la racine de l'API
-  target: 'https://mdamsigicmu.sec.gouv.sn',
-  changeOrigin: true,
-  secure: false,
+// Configuration du token
+let cachedToken = null;
+let tokenExpiry = null;
+
+async function getValidToken() {
+  if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
+    return cachedToken;
+  }
+
+  console.log('🔄 Obtention d\'un nouveau token...');
   
-  // ✅ CORRECTION 2: PathRewrite ajoute le chemin complet
-  pathRewrite: {
-    '^/api': '/services/udam/api'  // /api/xxx -> /services/udam/api/xxx
-  },
-  
-  // ✅ CORRECTION 3: Ajout de headers pour éviter ECONNRESET
-  headers: {
-    'Connection': 'keep-alive'
-  },
-  
-  // ✅ CORRECTION 4: Timeouts plus longs
-  proxyTimeout: 30000,
-  timeout: 30000,
-  
-  onProxyReq: (proxyReq, req, res) => {
-    const token = config.getToken();
-    proxyReq.setHeader('Authorization', token);
+  for (let i = 0; i < PROXY_LIST.length; i++) {
+    const proxyUrl = getNextProxy();
     
-    // Log détaillé pour déboguer
-    console.log(`🔄 [PROXY] ${req.method} ${req.originalUrl}`);
-    console.log(`   → ${proxyReq.getHeader('host')}${proxyReq.path}`);
-    console.log(`   🔑 Token: ${token.substring(0, 50)}...`);
-  },
+    try {
+      const agent = new HttpsProxyAgent(proxyUrl, { rejectUnauthorized: false });
+      
+      const response = await axios.post(
+        'https://mdamsigicmu.sec.gouv.sn/api/authenticate',
+        { username: 'caisse_sencsu', password: 'passer' },
+        { httpsAgent: agent, timeout: 15000 }
+      );
+      
+      cachedToken = response.data.id_token;
+      tokenExpiry = Date.now() + (4 * 60 * 60 * 1000); // 4 heures
+      console.log('✅ Nouveau token obtenu');
+      return cachedToken;
+      
+    } catch (error) {
+      console.log(`❌ Proxy ${i + 1} échoué: ${error.message}`);
+    }
+  }
   
-  onProxyRes: (proxyRes, req, res) => {
-    console.log(`✅ [API] Response ${proxyRes.statusCode} pour ${req.originalUrl}`);
-  },
-  
-  onError: (err, req, res) => {
-    console.error('❌ [ERREUR PROXY]:', {
-      message: err.message,
-      code: err.code,
-      url: req.originalUrl
-    });
+  throw new Error('Aucun proxy n\'a fonctionné pour l\'authentification');
+}
+
+// API Proxy endpoint
+app.get('/api/*', async (req, res) => {
+  try {
+    const token = await getValidToken();
+    const apiPath = req.params[0]; // Récupère tout après /api/
+    const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
     
+    // Construire l'URL complète de l'API CSU
+    const apiUrl = `https://mdamsigicmu.sec.gouv.sn/services/udam/api/${apiPath}${queryString}`;
+    
+    console.log(`🔄 Appel API: ${apiUrl}`);
+    
+    // Essayer chaque proxy
+    for (let i = 0; i < PROXY_LIST.length; i++) {
+      const proxyUrl = getNextProxy();
+      
+      try {
+        const agent = new HttpsProxyAgent(proxyUrl, { rejectUnauthorized: false });
+        
+        const response = await axios.get(apiUrl, {
+          headers: { 'Authorization': `Bearer ${token}` },
+          httpsAgent: agent,
+          timeout: 15000
+        });
+        
+        console.log(`✅ Réponse API: ${response.status}`);
+        return res.json(response.data);
+        
+      } catch (error) {
+        console.log(`❌ Proxy ${i + 1} échoué: ${error.message}`);
+      }
+    }
+    
+    throw new Error('Tous les proxys ont échoué');
+    
+  } catch (error) {
+    console.error('❌ Erreur API:', error.message);
     res.status(500).json({ 
-      error: 'Proxy Error', 
-      details: err.message,
-      code: err.code,
-      timestamp: new Date().toISOString()
+      error: 'Erreur API', 
+      message: error.message 
     });
   }
 });
 
-app.use('/api', apiProxy);
-
-// 4. Endpoints d'information
-app.get('/token-info', (req, res) => {
-  res.json(config.getTokenInfo());
-});
-
-// ✅ Endpoint de test direct de l'API
+// Test endpoint
 app.get('/test-api', async (req, res) => {
-  console.log('🧪 Test direct de l\'API CSU...');
-  
-  const axios = require('axios');
-  const https = require('https');
-  
-  const testCode = req.query.code || 'V9676R6540';
-  
   try {
-    console.log(`📡 Test avec le code: ${testCode}`);
+    const token = await getValidToken();
+    const testCode = req.query.code || 'V9676R6540';
+    
+    // Essayer avec le premier proxy
+    const proxyUrl = PROXY_LIST[0];
+    const agent = new HttpsProxyAgent(proxyUrl, { rejectUnauthorized: false });
     
     const response = await axios.get(
       `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${testCode}`,
       {
-        headers: { 
-          'Authorization': config.getToken(),
-          'Connection': 'keep-alive'
-        },
-        httpsAgent: new https.Agent({ 
-          rejectUnauthorized: false,
-          keepAlive: true 
-        }),
+        headers: { 'Authorization': `Bearer ${token}` },
+        httpsAgent: agent,
         timeout: 15000
       }
     );
     
-    console.log(`✅ Test API réussi: status ${response.status}`);
-    
     res.json({
       success: true,
-      message: 'API CSU accessible depuis Render',
-      status: response.status,
-      dataPreview: JSON.stringify(response.data).substring(0, 300),
-      timestamp: new Date().toISOString()
+      proxy: proxyUrl.split('@').pop(),
+      status: response.status
     });
     
   } catch (error) {
-    console.error('❌ Test API échoué:', {
-      message: error.message,
-      code: error.code,
-      status: error.response?.status
-    });
-    
-    res.status(500).json({
+    res.json({
       success: false,
-      error: error.message,
-      code: error.code,
-      isConnectionError: error.code === 'ECONNRESET',
-      isTimeout: error.code === 'ETIMEDOUT',
-      suggestion: error.code === 'ECONNRESET' 
-        ? 'Connexion réinitialisée - possible pare-feu Render' 
-        : 'Vérifiez si l\'API est accessible',
-      timestamp: new Date().toISOString()
+      error: error.message
     });
   }
 });
@@ -150,35 +160,20 @@ app.get('/test-api', async (req, res) => {
 app.get('/health', (req, res) => {
   res.json({
     status: 'online',
-    service: 'CSU Proxy',
-    version: '2.0.1',
-    token_auto_update: true,
-    last_token_update: config.getTokenInfo().lastUpdate,
-    timestamp: new Date().toISOString()
+    token_valid: cachedToken !== null,
+    proxies_available: PROXY_LIST.length
   });
 });
 
-// 5. Servir Angular (votre frontend)
+// Servir les fichiers Angular
 app.use(express.static(path.join(__dirname, 'dist/carte-verification/browser')));
-
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist/carte-verification/browser/index.html'));
 });
 
-// 6. Gestionnaire d'erreurs global
-app.use((err, req, res, next) => {
-  console.error('🔥 Global Error:', err.stack);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: err.message
-  });
-});
-
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server started on port ${PORT}`);
-  console.log(`🔐 Token auto-update: ENABLED`);
-  console.log(`📁 Static files: ${path.join(__dirname, 'dist/carte-verification/browser')}`);
-  console.log(`🔄 Last token update: ${config.getTokenInfo().lastUpdate}`);
-  console.log(`🧪 Test endpoint: http://localhost:${PORT}/test-api`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Serveur démarré sur le port ${PORT}`);
+  console.log(`🔧 ${PROXY_LIST.length} proxys WebShare configurés`);
+  console.log(`🧪 Test: http://localhost:${PORT}/test-api`);
 });
