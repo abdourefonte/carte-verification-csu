@@ -10,6 +10,10 @@
 
     "start": "node server.js",
 
+    "diagnostic": "node diagnostic.js",
+    "fix-render": "node scripts/fix-for-render.js",
+    "deploy-render": "node scripts/fix-for-render.js && node server.js",
+
     "build": "ng build --configuration=production",
 
     "watch": "ng build --watch --configuration development",

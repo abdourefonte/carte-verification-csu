@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-04-23T15:21:24.004Z",
+  "platform": "win32",
+  "render_detected": false,
+  "results": {
+    "environnement": {
+      "node_version": "v20.18.0",
+      "platform": "win32",
+      "cwd": "C:\\Users\\LENOVO\\Music\\Projet_final\\carte-verification",
+      "env_vars": {
+        "PORT": "non défini",
+        "NODE_ENV": "non défini",
+        "RENDER": "non défini",
+        "WEB_CONCURRENCY": "non défini"
+      },
+      "files": {
+        "config_exists": false,
+        "auto_update_exists": false,
+        "dist_exists": false
+      }
+    },
+    "reseau": {
+      "internet_access": true,
+      "latency_ms": 1570,
+      "dns_resolution": true
+    },
+    "api": {
+      "auth_success": true,
+      "token_preview": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJjYWlzc2Vfc2VuY3N1I...",
+      "full_test": {
+        "success": true,
+        "working_url": "https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=V9676R6540",
+        "status": 200,
+        "has_data": true,
+        "data_type": "object"
+      }
+    },
+    "token": {
+      "error": "Cannot find module '../config.js'\nRequire stack:\n- C:\\Users\\LENOVO\\Music\\Projet_final\\carte-verification\\diagnostic.js"
+    },
+    "proxy": {
+      "HTTP_PROXY": "non défini",
+      "HTTPS_PROXY": "non défini",
+      "http_proxy": "non défini",
+      "https_proxy": "non défini",
+      "NO_PROXY": "non défini",
+      "node_tls_reject_unauthorized": "non défini"
+    }
+  }
+}

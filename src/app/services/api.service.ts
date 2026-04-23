@@ -120,7 +120,7 @@ getBeneficiaire(code: string): Observable<Beneficiaire> {
   
   // Appelle VOTRE proxy sur Render
   return this.http.get<Beneficiaire>(
-    `/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
+    `/api/api/beneficiairess/codeImmatriculation?code=${encodedCode}`
   );
 }
 }

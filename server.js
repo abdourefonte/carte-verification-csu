@@ -1,67 +1,100 @@
+// server.js - VERSION POUR AUTOMATISATION
+
+// Désactiver tous les proxys (spécifique à Render)
+delete process.env.HTTP_PROXY;
+delete process.env.HTTPS_PROXY;
+delete process.env.http_proxy;
+delete process.env.https_proxy;
+// Permettre les connexions SSL non vérifiées (nécessaire pour l'API gouvernementale)
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+console.log('🔧 Configuration Render:');
+console.log('   - Proxy HTTP désactivé:', !process.env.HTTP_PROXY ? '✅' : '⚠️');
+console.log('   - Proxy HTTPS désactivé:', !process.env.HTTPS_PROXY ? '✅' : '⚠️');
+console.log('   - TLS strict désactivé:', process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0' ? '✅' : '⚠️');
 const express = require('express');
-const axios = require('axios');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const cors = require('cors');
 const path = require('path');
-const { HttpsProxyAgent } = require('https-proxy-agent');
+const config = require('./config');  // Import du token automatisé
 
 const app = express();
+
+// 1. CORS configuration
 app.use(cors());
 
-// Liste de proxies publics (testés)
-const PROXIES = [
-  'http://proxy-nairobi.xyz:8080',
-  'http://103.169.142.0:8080',
-  'http://41.77.188.165:8080',
-  'http://154.113.113.70:8080',
-];
+// 2. Logging des requêtes
+app.use((req, res, next) => {
+  console.log(`📨 [${new Date().toLocaleTimeString()}] ${req.method} ${req.path}`);
+  next();
+});
 
-let currentProxyIndex = 0;
-
-function getNextProxy() {
-  currentProxyIndex = (currentProxyIndex + 1) % PROXIES.length;
-  return PROXIES[currentProxyIndex];
-}
-
-app.get('/api/beneficiairess/codeImmatriculation', async (req, res) => {
-  try {
-    const { code } = req.query;
-    const token = require('./config').getToken();
-    const proxyUrl = getNextProxy();
-    
-    console.log(`🔍 Utilisation du proxy: ${proxyUrl}`);
-    
-    const proxyAgent = new HttpsProxyAgent(proxyUrl);
-    
-    const response = await axios({
-      method: 'GET',
-      url: `https://mdamsigicmu.sec.gouv.sn/services/udam/api/beneficiairess/codeImmatriculation?code=${code}`,
-      headers: { 
-        'Authorization': token,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      httpsAgent: proxyAgent,
-      timeout: 30000,
-      proxy: false // Important pour éviter conflit
-    });
-    
-    console.log(`✅ Succès via proxy ${proxyUrl}`);
-    res.json(response.data);
-    
-  } catch (error) {
-    console.error('❌ Erreur:', error.message);
+// 3. Proxy API CSU avec token automatique
+const apiProxy = createProxyMiddleware({
+  target: 'https://mdamsigicmu.sec.gouv.sn/services/udam',
+  // target:'http://gestamo.anacmu.sn:3031',
+  changeOrigin: true,
+  secure: false,
+  pathRewrite: {
+    '^/api': '' 
+  },
+  onProxyReq: (proxyReq, req, res) => {
+    // Utilise le token frais de config.js
+    const token = config.getToken();
+    proxyReq.setHeader('Authorization', token);
+    console.log(`🔑 Token utilisé (${token.length} caractères)`);
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    console.log(`📊 API Response: ${proxyRes.statusCode}`);
+  },
+  onError: (err, req, res) => {
+    console.error('❌ Proxy Error:', err.message);
     res.status(500).json({ 
-      error: error.message,
-      code: error.code,
-      proxy: getNextProxy()
+      error: 'Proxy Error', 
+      details: err.message,
+      timestamp: new Date().toISOString()
     });
   }
 });
 
-// Servir Angular
+app.use('/api', apiProxy);
+
+// 4. Endpoints d'information
+app.get('/token-info', (req, res) => {
+  res.json(config.getTokenInfo());
+});
+
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'CSU Proxy',
+    version: '2.0.0',
+    token_auto_update: true,
+    last_token_update: config.getTokenInfo().lastUpdate,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 5. Servir Angular (votre frontend)
 app.use(express.static(path.join(__dirname, 'dist/carte-verification/browser')));
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist/carte-verification/browser/index.html'));
 });
 
+// 6. Gestionnaire d'erreurs global
+app.use((err, req, res, next) => {
+  console.error('🔥 Global Error:', err.stack);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message
+  });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server started on port ${PORT}`);
+  console.log(`🔐 Token auto-update: ENABLED`);
+  console.log(`📁 Static files: ${path.join(__dirname, 'dist/carte-verification/browser')}`);
+  console.log(`🔄 Last token update: ${config.getTokenInfo().lastUpdate}`);
+});
