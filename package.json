@@ -11,7 +11,9 @@
     "start": "node server.js",
 
     "diagnostic": "node diagnostic.js",
+
     "fix-render": "node scripts/fix-for-render.js",
+
     "deploy-render": "node scripts/fix-for-render.js && node server.js",
 
     "build": "ng build --configuration=production",
@@ -60,7 +62,11 @@
 
     "express": "^4.18.2",
 
+    "http-proxy-agent": "^9.0.0",
+
     "http-proxy-middleware": "^2.0.6",
+
+    "https-proxy-agent": "^9.0.0",
 
     "moment": "^2.30.1",
 
